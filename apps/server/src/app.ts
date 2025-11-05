@@ -1,9 +1,17 @@
-import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
+import Fastify, {
+  type FastifyInstance,
+  type FastifyReply,
+  type FastifyRequest,
+} from "fastify";
 import type { AudioFile } from "@audio/shared";
 
 export type ServerDeps = {
-  listFiles: () => Promise<Array<{ id: string; filename: string; path: string; sizeBytes: number }>>;
-  readMetadata: (path: string) => Promise<{ durationSec: number; sampleRate?: number; channels?: number }>;
+  listFiles: () => Promise<
+    Array<{ id: string; filename: string; path: string; sizeBytes: number }>
+  >;
+  readMetadata: (
+    path: string
+  ) => Promise<{ durationSec: number; sampleRate?: number; channels?: number }>;
 };
 
 export async function createServer(deps: ServerDeps): Promise<FastifyInstance> {
@@ -21,7 +29,7 @@ export async function createServer(deps: ServerDeps): Promise<FastifyInstance> {
         sampleRate: meta.sampleRate,
         channels: meta.channels,
         sizeBytes: f.sizeBytes,
-        path: undefined
+        path: undefined,
       });
     }
     reply.send(results);
@@ -29,5 +37,3 @@ export async function createServer(deps: ServerDeps): Promise<FastifyInstance> {
 
   return app;
 }
-
-
