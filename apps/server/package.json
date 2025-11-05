@@ -11,6 +11,8 @@
     "dev": "node dist/index.js || echo 'Server dev placeholder'"
   },
   "dependencies": {
-    "@audio/shared": "workspace:*"
+    "@audio/shared": "workspace:*",
+    "fastify": "4.28.1",
+    "@types/node": "20.11.30"
   }
 }
