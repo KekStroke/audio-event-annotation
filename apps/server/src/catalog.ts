@@ -21,8 +21,13 @@ export async function buildAudioList(
 ): Promise<AudioFile[]> {
   const result: AudioFile[] = [];
   for (const f of files) {
-    const meta = await readMetadata(f.path);
-    result.push(mergeFileAndMeta(f, meta));
+    try {
+      const meta = await readMetadata(f.path);
+      result.push(mergeFileAndMeta(f, meta));
+    } catch (_err) {
+      // Skip unreadable/invalid files per requirements; do not crash
+      continue;
+    }
   }
   return result;
 }
