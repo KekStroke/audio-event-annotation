@@ -4,6 +4,7 @@ import Fastify, {
   type FastifyRequest,
 } from "fastify";
 import type { AudioFile } from "@audio/shared";
+import { buildAudioList } from "./catalog";
 
 export type ServerDeps = {
   listFiles: () => Promise<
@@ -19,19 +20,7 @@ export async function createServer(deps: ServerDeps): Promise<FastifyInstance> {
 
   app.get("/api/audio", async (_req: FastifyRequest, reply: FastifyReply) => {
     const files = await deps.listFiles();
-    const results: AudioFile[] = [];
-    for (const f of files) {
-      const meta = await deps.readMetadata(f.path);
-      results.push({
-        id: f.id,
-        filename: f.filename,
-        durationSec: meta.durationSec,
-        sampleRate: meta.sampleRate,
-        channels: meta.channels,
-        sizeBytes: f.sizeBytes,
-        path: undefined,
-      });
-    }
+    const results: AudioFile[] = await buildAudioList(files, deps.readMetadata);
     reply.send(results);
   });
 
