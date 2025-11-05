@@ -100,6 +100,11 @@ When("I request GET {string}", async function (path: string) {
 });
 
 Then("the response status should be {int}", function (status: number) {
+  if (response.status !== status) {
+    console.log("Expected:", status, "Got:", response.status);
+    console.log("Body:", response.body);
+    console.log("Headers:", response.headers);
+  }
   assert.strictEqual(response.status, status);
 });
 

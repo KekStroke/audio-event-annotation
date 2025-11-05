@@ -1,7 +1,16 @@
 import type { AudioFile } from "@audio/shared";
 
-export type FileEntry = { id: string; filename: string; path: string; sizeBytes: number };
-export type Meta = { durationSec: number; sampleRate?: number; channels?: number };
+export type FileEntry = {
+  id: string;
+  filename: string;
+  path: string;
+  sizeBytes: number;
+};
+export type Meta = {
+  durationSec: number;
+  sampleRate?: number;
+  channels?: number;
+};
 
 export function mergeFileAndMeta(file: FileEntry, meta: Meta): AudioFile {
   return {
@@ -11,7 +20,7 @@ export function mergeFileAndMeta(file: FileEntry, meta: Meta): AudioFile {
     sampleRate: meta.sampleRate,
     channels: meta.channels,
     sizeBytes: file.sizeBytes,
-    path: undefined
+    path: undefined,
   };
 }
 
@@ -31,5 +40,3 @@ export async function buildAudioList(
   }
   return result;
 }
-
-
