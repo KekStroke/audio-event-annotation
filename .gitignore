@@ -1,7 +1,48 @@
+# Dependencies & build outputs
 node_modules/
+**/node_modules/
 dist/
+build/
+out/
+**/dist/
+
+# TypeScript build info
+*.tsbuildinfo
+**/*.tsbuildinfo
+
+# Logs & coverage
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+coverage/
+.nyc_output/
+.eslintcache
+
+# Env & local configs
+.env
+.env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Caches & tooling
 .turbo/
 .pnpm-store/
+.cache/
+.parcel-cache/
+
+# IDE/editor
+.vscode/
+.idea/
+
+# OS files
 .DS_Store
-*.log
+Thumbs.db
+
+# Framework/platform
+.next/
+.vercel/
+.netlify/
 
