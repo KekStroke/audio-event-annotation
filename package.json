@@ -9,10 +9,17 @@
   "scripts": {
     "build": "tsc -b tsconfig.build.json",
     "typecheck": "tsc -b tsconfig.build.json --pretty false --verbose",
-    "dev": "echo 'Dev placeholder: start server and web once implemented'"
+    "dev": "echo 'Dev placeholder: start server and web once implemented'",
+    "bdd": "cucumber-js -r ts-node/register -r tests/bdd/steps/**/*.ts tests/bdd/**/*.feature",
+    "test": "vitest run",
+    "test:all": "pnpm -w run typecheck && pnpm run test && pnpm run bdd"
   },
   "devDependencies": {
-    "typescript": "5.6.3"
+    "@cucumber/cucumber": "10.8.0",
+    "@types/node": "20.11.30",
+    "ts-node": "10.9.2",
+    "typescript": "5.6.3",
+    "vitest": "1.6.0"
   }
 }
 
