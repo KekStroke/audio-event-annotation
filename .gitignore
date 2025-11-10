@@ -16,56 +16,75 @@ parts/
 sdist/
 var/
 wheels/
+pip-wheel-metadata/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
 # Virtual Environment
 venv/
-ENV/
 env/
-.venv
+ENV/
+env.bak/
+venv.bak/
 
-# IDE
-.vscode/
+# PyCharm
 .idea/
-*.swp
-*.swo
-*~
 
-# Testing
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pytest
 .pytest_cache/
 .coverage
 htmlcov/
-.tox/
+*.cover
+.hypothesis/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
 
 # Database
 *.db
 *.sqlite
 *.sqlite3
+
+# Audio files (for testing)
+*.wav
+*.mp3
+*.flac
+*.ogg
+!tests/fixtures/*.wav
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Flask
 instance/
+.webassets-cache
 
 # Environment variables
 .env
 .env.local
 
-# Logs
-*.log
-logs/
-
-# OS
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# Audio files (optional - зависит от workflow)
-# *.wav
-# *.mp3
-# *.flac
-# *.ogg
-
 # Temporary files
-tmp/
-temp/
-cache/
+*.tmp
+*.bak
+*.swp
+*~
 
