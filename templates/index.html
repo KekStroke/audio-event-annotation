@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Audio Event Annotation</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modal.css') }}">
     <!-- wavesurfer.js CDN -->
     <script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
     <script src="https://unpkg.com/wavesurfer.js@7/dist/plugins/timeline.min.js"></script>
@@ -57,6 +58,7 @@
                             </div>
                             <div class="region-actions" style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
                                 <button type="button" class="control-btn" id="play-selection" data-action="play-selection" tabindex="11">Play Selection</button>
+                                <button type="button" class="control-btn" id="create-annotation" data-action="create-annotation" tabindex="14">Create Annotation</button>
                                 <button type="button" class="control-btn" id="clear-selection" data-action="clear-selection" tabindex="12">Clear Selection</button>
                                 <button type="button" class="control-btn" id="zoom-to-region" data-action="zoom-to-region" tabindex="13">Zoom to Region</button>
                             </div>
@@ -89,10 +91,60 @@
             </aside>
         </main>
     </div>
+
+    <!-- Модальное окно для создания аннотации -->
+    <div class="modal-overlay" id="annotation-modal-overlay">
+        <div class="modal" id="annotation-modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Create Annotation</h2>
+                <button type="button" class="modal-close" aria-label="Close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Сообщения об успехе/ошибке -->
+                <div class="message success-message" id="success-message"></div>
+                <div class="message error-message" id="error-message"></div>
+
+                <!-- Форма аннотации -->
+                <form id="annotation-form" class="annotation-form">
+                    <!-- Скрытые поля для start_time и end_time -->
+                    <input type="hidden" id="start-time" name="start_time">
+                    <input type="hidden" id="end-time" name="end_time">
+
+                    <!-- Поле event_label -->
+                    <div class="form-group">
+                        <label for="event-label" class="form-label">Event Label *</label>
+                        <input type="text" id="event-label" name="event_label" class="form-input" required>
+                    </div>
+
+                    <!-- Поле confidence (slider) -->
+                    <div class="form-group">
+                        <label for="confidence" class="form-label">Confidence</label>
+                        <input type="range" id="confidence" name="confidence" class="form-range" min="0" max="1" step="0.01" value="0.5">
+                        <div class="range-value">
+                            Value: <span id="confidence-value">0.50</span>
+                        </div>
+                    </div>
+
+                    <!-- Поле notes (textarea) -->
+                    <div class="form-group">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea id="notes" name="notes" class="form-textarea" rows="4"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="modal-btn modal-btn-secondary" id="cancel-annotation">Cancel</button>
+                <button type="button" class="modal-btn modal-btn-primary" id="save-annotation">Save Annotation</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Audio Player JavaScript -->
     <script src="{{ url_for('static', filename='js/audio-player.js') }}"></script>
     <!-- Selection Tool JavaScript -->
     <script src="{{ url_for('static', filename='js/selection-tool.js') }}"></script>
+    <!-- Annotation Form JavaScript -->
+    <script src="{{ url_for('static', filename='js/annotation-form.js') }}"></script>
 </body>
 </html>
 
