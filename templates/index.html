@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Audio Event Annotation</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <!-- wavesurfer.js CDN -->
+    <script src="https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.min.js"></script>
+    <script src="https://unpkg.com/wavesurfer.js@7/dist/plugins/timeline.min.js"></script>
+    <script src="https://unpkg.com/wavesurfer.js@7/dist/plugins/regions.min.js"></script>
+    <script src="https://unpkg.com/wavesurfer.js@7/dist/plugins/minimap.min.js"></script>
 </head>
 <body class="dark-theme">
     <div class="app-container">
@@ -35,10 +40,15 @@
             <section class="workspace" role="main">
                 <div class="workspace-header">
                     <h2 class="workspace-title">Visualization Area</h2>
+                    <div class="workspace-controls">
+                        <button type="button" class="control-btn" id="zoom-in" data-action="zoom-in" tabindex="9">Zoom In</button>
+                        <button type="button" class="control-btn" id="zoom-out" data-action="zoom-out" tabindex="10">Zoom Out</button>
+                    </div>
                 </div>
                 <div class="workspace-content">
                     <div class="visualization-container">
-                        <p class="placeholder-text">Select an audio file to visualize</p>
+                        <div id="waveform"></div>
+                        <div id="time-display" class="time-display">00:00 / 00:00</div>
                     </div>
                 </div>
             </section>
@@ -62,6 +72,8 @@
             </aside>
         </main>
     </div>
+    <!-- Audio Player JavaScript -->
+    <script src="{{ url_for('static', filename='js/audio-player.js') }}"></script>
 </body>
 </html>
 
