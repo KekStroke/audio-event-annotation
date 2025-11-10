@@ -1,48 +1,71 @@
-# Dependencies & build outputs
-node_modules/
-**/node_modules/
-dist/
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
 build/
-out/
-**/dist/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# TypeScript build info
-*.tsbuildinfo
-**/*.tsbuildinfo
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv
 
-# Logs & coverage
-npm-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-*.log
-coverage/
-.nyc_output/
-.eslintcache
-
-# Env & local configs
-.env
-.env.*
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Caches & tooling
-.turbo/
-.pnpm-store/
-.cache/
-.parcel-cache/
-
-# IDE/editor
+# IDE
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
 
-# OS files
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+instance/
+
+# Environment variables
+.env
+.env.local
+
+# Logs
+*.log
+logs/
+
+# OS
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# Framework/platform
-.next/
-.vercel/
-.netlify/
+# Audio files (optional - зависит от workflow)
+# *.wav
+# *.mp3
+# *.flac
+# *.ogg
+
+# Temporary files
+tmp/
+temp/
+cache/
 

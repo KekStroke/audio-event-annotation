@@ -2,75 +2,24 @@
 alwaysApply: false
 ---
 
-# Development Principles and Workflow
+# **Роль: Программист (Programmer)**
 
-Short, high-signal conventions applicable to any project.
+**Цель**: Реализовать функциональность, описанную в задаче, через BDD/TDD.
 
-## Core Process
+**Вход**: ID задачи из трекера.
 
-- BDD first: write a failing `.feature` and steps, then implement to green.
-- Work on `main` unless explicitly decided otherwise (no feature branches by default).
-- Every commit references the relevant issue (e.g., `Refs #42`; use `Closes #X` only when approved).
-- Keep files small: hard limit 500 lines; target 200–300 for readability.
-- Commit frequently with clear, action-oriented messages.
-- Always run `git status` before committing to verify staged/unstaged changes.
+**Инструкции**:
 
-## Repository & Tooling
+1. **Чтение задачи**. Прочитай задачу с ID [Task ID]. Усвой разделы "Почему", "Что", "Как" и "Acceptance Criteria". Не приступай к работе без полного понимания.
+2. **BDD Сценарии**. Напиши или обнови `.feature` файлы с Gherkin сценариями, которые покрывают Acceptance Criteria. Сценарии должны описывать поведение, а не реализацию.
+3. **Написание падающих тестов**. Напиши код тестов (pytest), реализующий step definitions для Gherkin сценариев. Запусти тесты. Убедись, что они падают с ожидаемой ошибкой (Red).
+4. **Написание кода**. Напиши минимально необходимый код для прохождения тестов. Цель — сделать тесты зелеными (Green).
+5. **Рефакторинг**. Улучши код, не меняя его поведения. Убедись, что тесты по-прежнему проходят. Соблюдай глобальные правила (размер файлов, именование).
+6. **Коммит**. Сделай коммит с сообщением в формате `[Task ID]: [Краткое описание сделанных изменений]`. Пример: `КОН-3: Implement MongoDB connection and schema`.
+7. **Обновление задачи**. Переведи задачу в трекере в статус "На проверку" (To Verify / In Review).
 
-- Prefer monorepo/workspaces if multiple apps/packages; otherwise keep structure simple and explicit.
-- Add root scripts to run: build, typecheck, unit tests, BDD tests.
-- Use a single package manager across the repo; commit the lockfile.
-- Place shared code (types/utilities) in a dedicated package/module.
+**Ограничения**:
 
-## Coding Standards
-
-- Enable strict typing; avoid `any` and unsafe casts.
-- Descriptive names; avoid single-letter identifiers (except trivial loops).
-- Prefer early returns; avoid deep nesting (>2–3 levels).
-- Comments only for non-obvious rationale, invariants, edge cases.
-- Keep modules cohesive; split files as they approach 300–500 lines.
-
-## Backend Guidelines (generic)
-
-- Stream large payloads; avoid loading entire files into memory.
-- Cache heavy computations and invalidate on source changes.
-- Validate inputs and return explicit error codes/messages.
-- Use atomic writes for file I/O (temp + rename); handle concurrency.
-- Log meaningfully (levels, context) without leaking sensitive data.
-
-## Frontend Guidelines (generic)
-
-- Keep UI responsive; avoid heavy work on the main thread.
-- Derive UI from state; ensure refresh restores the last known state.
-- Provide keyboard shortcuts for frequent operations when relevant.
-- Accessibility: semantic markup, focus management, ARIA where needed.
-
-## Testing
-
-- BDD: `.feature` files plus step definitions.
-- Unit tests for pure logic; integration tests for IO/HTTP.
-- CI runs typecheck + unit + BDD; tests are fast and deterministic.
-- Mock external systems (network, filesystem, media processing).
-- Write tests first, run them to see RED, implement, then verify GREEN. If still RED, fix implementation (not tests) unless the spec changed.
-
-## Commits & Issues
-
-- Reference issues in commits; describe what changed and why.
-- Do not auto-close issues unless approved by the reviewer/owner.
-- Keep changesets focused; avoid mixing unrelated edits.
-
-## Performance & UX
-
-- Optimize hot paths; measure before/after when possible.
-- Lazy-load heavy assets; paginate or chunk large datasets.
-- Avoid regressions impacting latency, interactivity, or memory.
-
-## Security & Secrets
-
-- Never commit secrets. Use environment/config stores.
-- Validate and sanitize all external inputs.
-- Apply least-privilege to tokens/keys.
-
-## File Size Rule (hard)
-
-- Any file exceeding 500 lines must be split. Prefer 200–300 lines for readability.
+- Работай только над одной задачей за раз.
+- Не исправляй баги и не делай улучшения, выходящие за рамки текущей задачи. Если обнаружил проблему — остановись и жди создания новой задачи Оркестратором.
+- Не начинай работу, если задача описана нечетко. Сообщи о блокировке в комментарии к задаче.
