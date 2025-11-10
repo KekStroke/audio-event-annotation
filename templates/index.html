@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark-theme">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Event Annotation</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body class="dark-theme">
+    <div class="app-container">
+        <!-- Панель инструментов -->
+        <header class="toolbar" role="toolbar">
+            <div class="toolbar-content">
+                <h1 class="toolbar-title">Audio Event Annotation</h1>
+                <nav class="toolbar-actions">
+                    <button type="button" class="toolbar-btn" tabindex="1" data-action="add-file">Add File</button>
+                    <button type="button" class="toolbar-btn" tabindex="2" data-action="settings">Settings</button>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Основной контент -->
+        <main class="main-content">
+            <!-- Sidebar для списка файлов -->
+            <aside class="sidebar" role="complementary">
+                <h2 class="sidebar-title">Files</h2>
+                <div class="file-list" role="list">
+                    <div class="file-item" role="listitem" tabindex="3">
+                        <span class="file-name">No files loaded</span>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Рабочая область -->
+            <section class="workspace" role="main">
+                <div class="workspace-header">
+                    <h2 class="workspace-title">Visualization Area</h2>
+                </div>
+                <div class="workspace-content">
+                    <div class="visualization-container">
+                        <p class="placeholder-text">Select an audio file to visualize</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Панель управления -->
+            <aside class="control-panel" role="complementary">
+                <h2 class="control-panel-title">Controls</h2>
+                <div class="control-group">
+                    <label for="playback-speed" class="control-label">Playback Speed</label>
+                    <input type="range" id="playback-speed" class="control-input" min="0.5" max="2" step="0.1" value="1" tabindex="4">
+                </div>
+                <div class="control-group">
+                    <label for="volume" class="control-label">Volume</label>
+                    <input type="range" id="volume" class="control-input" min="0" max="100" value="50" tabindex="5">
+                </div>
+                <div class="control-actions">
+                    <button type="button" class="control-btn" tabindex="6" data-action="play">Play</button>
+                    <button type="button" class="control-btn" tabindex="7" data-action="pause">Pause</button>
+                    <button type="button" class="control-btn" tabindex="8" data-action="stop">Stop</button>
+                </div>
+            </aside>
+        </main>
+    </div>
+</body>
+</html>
+

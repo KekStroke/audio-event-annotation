@@ -4,7 +4,7 @@ Audio Event Annotation Tool - главный файл Flask приложения
 Минимальное Flask приложение для запуска сервера.
 """
 
-from flask import Flask, render_template_string
+from flask import Flask, render_template
 
 # Инициализация Flask приложения
 app = Flask(__name__)
@@ -15,10 +15,12 @@ app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024 * 1024  # 16GB max file size
 
 # Инициализация БД
 from src.models import init_db
+
 init_db()
 
 # Регистрация Blueprints
 from src.api.audio_routes import audio_bp
+
 app.register_blueprint(audio_bp)
 
 
@@ -84,9 +86,9 @@ def index():
     Главная страница приложения.
 
     Returns:
-        str: HTML страница с приветствием
+        str: HTML страница с UI layout
     """
-    return render_template_string(HOME_TEMPLATE)
+    return render_template('index.html')
 
 
 @app.route("/health")
