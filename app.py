@@ -20,8 +20,10 @@ init_db()
 
 # Регистрация Blueprints
 from src.api.audio_routes import audio_bp
+from src.api.annotation_routes import annotation_bp
 
 app.register_blueprint(audio_bp)
+app.register_blueprint(annotation_bp)
 
 
 # Временный HTML шаблон для главной страницы
@@ -88,7 +90,7 @@ def index():
     Returns:
         str: HTML страница с UI layout
     """
-    return render_template('index.html')
+    return render_template("index.html")
 
 
 @app.route("/health")
