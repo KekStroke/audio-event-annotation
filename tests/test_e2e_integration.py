@@ -357,10 +357,22 @@ def request_waveform(context, client):
 
 @then('ответ должен быть PNG изображением')
 def check_waveform_is_png(context):
-    """Проверяем что ответ является PNG изображением."""
+    """Проверяем что ответ waveform является PNG изображением."""
+    assert 'waveform_response' in context, 'waveform_response не найден в контексте'
     assert context['waveform_response'].status_code == 200, \
         f'Ожидался статус 200, получен {context["waveform_response"].status_code}'
     content_type = context['waveform_response'].headers.get('Content-Type', '')
+    assert 'image/png' in content_type, \
+        f'Ожидался Content-Type image/png, получен {content_type}'
+
+
+@then('ответ спектрограммы должен быть PNG изображением')
+def check_spectrogram_is_png(context):
+    """Проверяем что ответ спектрограммы является PNG изображением."""
+    assert 'spectrogram_response' in context, 'spectrogram_response не найден в контексте'
+    assert context['spectrogram_response'].status_code == 200, \
+        f'Ожидался статус 200, получен {context["spectrogram_response"].status_code}'
+    content_type = context['spectrogram_response'].headers.get('Content-Type', '')
     assert 'image/png' in content_type, \
         f'Ожидался Content-Type image/png, получен {content_type}'
 
