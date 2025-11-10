@@ -7,6 +7,7 @@ API endpoints для работы с аудио-файлами.
 - Получения списка всех аудио-файлов
 - Потоковой загрузки аудио-файлов
 - Генерации waveform визуализации
+- Генерации спектрограммы аудио
 """
 import os
 from flask import Blueprint, request, jsonify
@@ -18,6 +19,7 @@ from src.audio.metadata import (
 )
 from src.audio.streaming import stream_audio_file
 from src.audio.waveform import get_or_generate_waveform
+from src.audio.spectrogram import SpectrogramParams, get_or_generate_spectrogram
 from src.models import get_db, AudioFile, AudioFileStatus
 from src.models.audio_file import AudioFileStatus
 
@@ -285,6 +287,87 @@ def get_waveform(audio_file_id: str):
         finally:
             session.close()
     
+    except Exception as e:
+        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+
+
+@audio_bp.route('/<audio_file_id>/spectrogram', methods=['GET'])
+def get_spectrogram(audio_file_id: str):
+    """
+    Генерация спектрограммы выбранного интервала аудио-файла.
+
+    GET /api/audio/{id}/spectrogram?start_time=0&end_time=5&width=1024&height=512&color_map=viridis
+
+    Query parameters:
+        start_time: Начало интервала в секундах (по умолчанию 0)
+        end_time: Конец интервала в секундах (опционально)
+        width: Ширина изображения в пикселях (по умолчанию 1024)
+        height: Высота изображения в пикселях (по умолчанию 512)
+        color_map: Название цветовой карты matplotlib (по умолчанию viridis)
+
+    Returns:
+        PNG изображение спектрограммы (200)
+        или ошибка (400, 404, 500)
+    """
+    try:
+        import uuid
+        try:
+            audio_file_uuid = uuid.UUID(audio_file_id)
+        except ValueError:
+            return jsonify({'error': 'Invalid audio file ID format'}), 400
+
+        # Параметры запроса
+        start_time = request.args.get('start_time', default=0.0, type=float)
+        end_time = request.args.get('end_time', type=float)
+        width = request.args.get('width', type=int, default=1024)
+        height = request.args.get('height', type=int, default=512)
+        color_map = request.args.get('color_map', type=str, default='viridis')
+
+        if start_time < 0:
+            return jsonify({'error': 'start_time must be non-negative'}), 400
+        if end_time is not None and end_time <= 0:
+            return jsonify({'error': 'end_time must be positive'}), 400
+        if width <= 0 or width > 5000:
+            return jsonify({'error': 'Width must be between 1 and 5000'}), 400
+        if height <= 0 or height > 2000:
+            return jsonify({'error': 'Height must be between 1 and 2000'}), 400
+
+        params = SpectrogramParams(
+            start_time=start_time,
+            end_time=end_time,
+            width=width,
+            height=height,
+            color_map=color_map
+        )
+
+        db = get_db()
+        session = db.get_session()
+
+        try:
+            audio_file = AudioFile.get_by_id(session, audio_file_uuid)
+            if not audio_file:
+                return jsonify({'error': 'Audio file not found'}), 404
+
+            if not os.path.exists(audio_file.file_path):
+                return jsonify({'error': 'Audio file not found on disk'}), 404
+
+            try:
+                png_data = get_or_generate_spectrogram(audio_file.file_path, params)
+            except ValueError as value_error:
+                return jsonify({'error': str(value_error)}), 400
+            except Exception as e:
+                return jsonify({'error': f'Error generating spectrogram: {str(e)}'}), 500
+
+            from flask import Response
+            return Response(
+                png_data,
+                mimetype='image/png',
+                headers={'Content-Type': 'image/png'}
+            )
+
+        finally:
+            session.close()
+
     except Exception as e:
         return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
 
