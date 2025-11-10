@@ -21,9 +21,11 @@ init_db()
 # Регистрация Blueprints
 from src.api.audio_routes import audio_bp
 from src.api.annotation_routes import annotation_bp
+from src.api.export_routes import export_bp
 
 app.register_blueprint(audio_bp)
 app.register_blueprint(annotation_bp)
+app.register_blueprint(export_bp)
 
 
 # Временный HTML шаблон для главной страницы

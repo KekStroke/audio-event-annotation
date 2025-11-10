@@ -379,9 +379,37 @@ function escapeHtml(text) {
 }
 
 /**
+ * Экспорт аннотаций в JSON
+ */
+function exportAnnotations() {
+    if (!currentAudioFileId) {
+        console.warn('Audio file ID не установлен');
+        alert('No audio file selected');
+        return;
+    }
+
+    // Формируем URL для экспорта
+    const exportUrl = `/api/audio/${currentAudioFileId}/export?format=json`;
+
+    // Создаем временную ссылку для скачивания
+    const link = document.createElement('a');
+    link.href = exportUrl;
+    link.download = 'annotations.json';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+/**
  * Инициализация при загрузке страницы
  */
 document.addEventListener('DOMContentLoaded', () => {
     initAnnotationList();
+
+    // Обработчик кнопки Export
+    const exportBtn = document.getElementById('export-annotations');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', exportAnnotations);
+    }
 });
 
