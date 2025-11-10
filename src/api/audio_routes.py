@@ -5,7 +5,10 @@ API endpoints для работы с аудио-файлами.
 - Добавления аудио-файлов из файловой системы
 - Получения метаданных аудио-файлов
 - Получения списка всех аудио-файлов
+- Потоковой загрузки аудио-файлов
+- Генерации waveform визуализации
 """
+import os
 from flask import Blueprint, request, jsonify
 from src.audio.metadata import (
     extract_metadata,
@@ -14,6 +17,7 @@ from src.audio.metadata import (
     validate_audio_format
 )
 from src.audio.streaming import stream_audio_file
+from src.audio.waveform import get_or_generate_waveform
 from src.models import get_db, AudioFile, AudioFileStatus
 from src.models.audio_file import AudioFileStatus
 
@@ -199,6 +203,84 @@ def stream_audio(audio_file_id: str):
             
             # Потоковая загрузка файла
             return stream_audio_file(audio_file.file_path, audio_file_id)
+        
+        finally:
+            session.close()
+    
+    except Exception as e:
+        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+
+
+@audio_bp.route('/<audio_file_id>/waveform', methods=['GET'])
+def get_waveform(audio_file_id: str):
+    """
+    Генерация waveform изображения для аудио-файла.
+    
+    GET /api/audio/{id}/waveform?width=1200&height=300&color=FF5733
+    
+    Query parameters:
+        width: Ширина изображения в пикселях (по умолчанию 1200)
+        height: Высота изображения в пикселях (по умолчанию 300)
+        color: Цвет waveform в hex формате без # (по умолчанию 1f77b4)
+    
+    Args:
+        audio_file_id: UUID аудио-файла
+    
+    Returns:
+        PNG изображение waveform (200)
+        или ошибка (404, 500)
+    """
+    try:
+        import uuid
+        # Валидация UUID
+        try:
+            audio_file_uuid = uuid.UUID(audio_file_id)
+        except ValueError:
+            return jsonify({'error': 'Invalid audio file ID format'}), 400
+        
+        # Получение параметров запроса
+        width = request.args.get('width', type=int, default=1200)
+        height = request.args.get('height', type=int, default=300)
+        color = request.args.get('color', type=str, default='1f77b4')
+        
+        # Валидация параметров
+        if width <= 0 or width > 5000:
+            return jsonify({'error': 'Width must be between 1 and 5000'}), 400
+        if height <= 0 or height > 2000:
+            return jsonify({'error': 'Height must be between 1 and 2000'}), 400
+        
+        # Получение из БД
+        db = get_db()
+        session = db.get_session()
+        
+        try:
+            audio_file = AudioFile.get_by_id(session, audio_file_uuid)
+            
+            if not audio_file:
+                return jsonify({'error': 'Audio file not found'}), 404
+            
+            # Проверка существования файла
+            if not os.path.exists(audio_file.file_path):
+                return jsonify({'error': 'Audio file not found on disk'}), 404
+            
+            # Генерация waveform
+            try:
+                png_data = get_or_generate_waveform(
+                    audio_file.file_path,
+                    width=width,
+                    height=height,
+                    color=color
+                )
+            except Exception as e:
+                return jsonify({'error': f'Error generating waveform: {str(e)}'}), 500
+            
+            # Возвращаем PNG изображение
+            from flask import Response
+            return Response(
+                png_data,
+                mimetype='image/png',
+                headers={'Content-Type': 'image/png'}
+            )
         
         finally:
             session.close()
