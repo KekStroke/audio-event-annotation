@@ -13,6 +13,7 @@ from src.audio.metadata import (
     validate_file_exists,
     validate_audio_format
 )
+from src.audio.streaming import stream_audio_file
 from src.models import get_db, AudioFile, AudioFileStatus
 from src.models.audio_file import AudioFileStatus
 
@@ -155,6 +156,49 @@ def list_audio_files():
             result = [audio_file.to_dict() for audio_file in audio_files]
             
             return jsonify(result), 200
+        
+        finally:
+            session.close()
+    
+    except Exception as e:
+        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+
+
+@audio_bp.route('/<audio_file_id>/stream', methods=['GET'])
+def stream_audio(audio_file_id: str):
+    """
+    Потоковая загрузка аудио-файла с поддержкой Range requests.
+    
+    GET /api/audio/{id}/stream
+    Headers: Range: bytes=start-end (опционально)
+    
+    Args:
+        audio_file_id: UUID аудио-файла
+    
+    Returns:
+        Потоковые данные аудио-файла (200 или 206)
+        или ошибка (404)
+    """
+    try:
+        import uuid
+        # Валидация UUID
+        try:
+            audio_file_uuid = uuid.UUID(audio_file_id)
+        except ValueError:
+            return jsonify({'error': 'Invalid audio file ID format'}), 400
+        
+        # Получение из БД
+        db = get_db()
+        session = db.get_session()
+        
+        try:
+            audio_file = AudioFile.get_by_id(session, audio_file_uuid)
+            
+            if not audio_file:
+                return jsonify({'error': 'Audio file not found'}), 404
+            
+            # Потоковая загрузка файла
+            return stream_audio_file(audio_file.file_path, audio_file_id)
         
         finally:
             session.close()
