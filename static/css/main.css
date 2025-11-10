@@ -144,6 +144,105 @@ body {
     font-size: 0.9rem;
 }
 
+/* Аннотации в sidebar */
+.annotations-section {
+    padding: 0.5rem;
+    border-top: 1px solid var(--border-color);
+    margin-top: 1rem;
+}
+
+.annotations-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.annotation-item {
+    padding: 0.75rem;
+    background-color: var(--bg-tertiary);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border-left: 4px solid var(--accent-color);
+}
+
+.annotation-item:hover {
+    background-color: var(--bg-primary);
+}
+
+.annotation-item-active {
+    background-color: var(--bg-primary);
+    border-left-color: var(--accent-hover);
+}
+
+.annotation-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.annotation-time-range {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-family: monospace;
+}
+
+.annotation-actions {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.annotation-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    transition: background-color 0.2s;
+}
+
+.annotation-btn:hover {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.annotation-btn-edit:hover {
+    color: var(--accent-color);
+}
+
+.annotation-btn-delete:hover {
+    color: #dc3545;
+}
+
+.annotation-item-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.annotation-event-label {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.annotation-confidence {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.annotation-item-empty {
+    padding: 1rem;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
 /* Рабочая область (Workspace) */
 .workspace {
     flex: 1;

@@ -235,9 +235,17 @@ function saveAnnotation() {
         notes: notes || null
     };
 
-    // Отправляем POST запрос
-    fetch('/api/annotations', {
-        method: 'POST',
+    // Проверяем, редактируем ли мы существующую аннотацию
+    const form = document.getElementById('annotation-form');
+    const annotationId = form ? form.dataset.annotationId : null;
+
+    // Определяем метод и URL
+    const method = annotationId ? 'PUT' : 'POST';
+    const url = annotationId ? `/api/annotations/${annotationId}` : '/api/annotations';
+
+    // Отправляем запрос
+    fetch(url, {
+        method: method,
         headers: {
             'Content-Type': 'application/json'
         },
@@ -252,10 +260,22 @@ function saveAnnotation() {
         return response.json();
     })
     .then(data => {
-        showSuccess('Аннотация успешно сохранена');
+        if (annotationId) {
+            showSuccess('Аннотация успешно обновлена');
+            // Отправляем событие об обновлении аннотации
+            document.dispatchEvent(new CustomEvent('annotationUpdated', { detail: data }));
+        } else {
+            showSuccess('Аннотация успешно сохранена');
+            // Отправляем событие о создании аннотации
+            document.dispatchEvent(new CustomEvent('annotationCreated', { detail: data }));
+        }
+        
         setTimeout(() => {
             closeAnnotationModal();
-            // Можно обновить список аннотаций или выполнить другие действия
+            // Очищаем ID аннотации из формы
+            if (form) {
+                delete form.dataset.annotationId;
+            }
         }, 1000);
     })
     .catch(error => {
@@ -319,6 +339,8 @@ function clearForm() {
     const form = document.getElementById('annotation-form');
     if (form) {
         form.reset();
+        // Очищаем ID аннотации
+        delete form.dataset.annotationId;
     }
     
     // Сбрасываем значение confidence

@@ -27,12 +27,23 @@
 
         <!-- Основной контент -->
         <main class="main-content">
-            <!-- Sidebar для списка файлов -->
+            <!-- Sidebar для списка файлов и аннотаций -->
             <aside class="sidebar" role="complementary">
                 <h2 class="sidebar-title">Files</h2>
                 <div class="file-list" role="list">
                     <div class="file-item" role="listitem" tabindex="3">
                         <span class="file-name">No files loaded</span>
+                    </div>
+                </div>
+                
+                <!-- Список аннотаций -->
+                <div class="annotations-section" style="margin-top: 2rem;">
+                    <h2 class="sidebar-title">Annotations</h2>
+                    <div class="annotations-count" id="annotations-count" style="color: var(--text-secondary, #cccccc); font-size: 0.9rem; margin-bottom: 0.5rem;">
+                        0 annotations
+                    </div>
+                    <div class="annotations-list" id="annotations-list" role="list">
+                        <!-- Аннотации будут загружены динамически -->
                     </div>
                 </div>
             </aside>
@@ -145,6 +156,8 @@
     <script src="{{ url_for('static', filename='js/selection-tool.js') }}"></script>
     <!-- Annotation Form JavaScript -->
     <script src="{{ url_for('static', filename='js/annotation-form.js') }}"></script>
+    <!-- Annotation List JavaScript -->
+    <script src="{{ url_for('static', filename='js/annotation-list.js') }}"></script>
 </body>
 </html>
 
