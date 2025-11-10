@@ -3,14 +3,15 @@ Audio Event Annotation Tool - главный файл Flask приложения
 
 Минимальное Flask приложение для запуска сервера.
 """
+
 from flask import Flask, render_template_string
 
 # Инициализация Flask приложения
 app = Flask(__name__)
 
 # Конфигурация
-app.config['SECRET_KEY'] = 'dev-secret-key-change-in-production'
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024 * 1024  # 16GB max file size
+app.config["SECRET_KEY"] = "dev-secret-key-change-in-production"
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024 * 1024  # 16GB max file size
 
 
 # Временный HTML шаблон для главной страницы
@@ -69,36 +70,28 @@ HOME_TEMPLATE = """
 """
 
 
-@app.route('/')
+@app.route("/")
 def index():
     """
     Главная страница приложения.
-    
+
     Returns:
         str: HTML страница с приветствием
     """
     return render_template_string(HOME_TEMPLATE)
 
 
-@app.route('/health')
+@app.route("/health")
 def health():
     """
     Health check endpoint для проверки работоспособности приложения.
-    
+
     Returns:
         dict: JSON ответ со статусом
     """
-    return {
-        'status': 'ok',
-        'message': 'Audio Event Annotation Tool is running'
-    }
+    return {"status": "ok", "message": "Audio Event Annotation Tool is running"}
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Запуск приложения в режиме разработки
-    app.run(
-        host='127.0.0.1',
-        port=5000,
-        debug=True
-    )
-
+    app.run(host="127.0.0.1", port=5000, debug=True)
