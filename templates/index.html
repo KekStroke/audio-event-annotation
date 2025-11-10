@@ -49,6 +49,23 @@
                     <div class="visualization-container">
                         <div id="waveform"></div>
                         <div id="time-display" class="time-display">00:00 / 00:00</div>
+                        
+                        <!-- Информация о выделенном регионе -->
+                        <div class="region-info" style="margin-top: 1rem; padding: 1rem; background-color: var(--bg-tertiary); border-radius: 4px;">
+                            <div id="region-time" class="region-time" style="display: none; color: var(--text-primary); font-size: 0.9rem;">
+                                No selection
+                            </div>
+                            <div class="region-actions" style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
+                                <button type="button" class="control-btn" id="play-selection" data-action="play-selection" tabindex="11">Play Selection</button>
+                                <button type="button" class="control-btn" id="clear-selection" data-action="clear-selection" tabindex="12">Clear Selection</button>
+                                <button type="button" class="control-btn" id="zoom-to-region" data-action="zoom-to-region" tabindex="13">Zoom to Region</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Спектрограмма региона -->
+                        <div id="region-spectrogram" class="region-spectrogram" style="margin-top: 1rem; display: none;">
+                            <!-- Спектрограмма будет загружена динамически -->
+                        </div>
                     </div>
                 </div>
             </section>
@@ -74,6 +91,8 @@
     </div>
     <!-- Audio Player JavaScript -->
     <script src="{{ url_for('static', filename='js/audio-player.js') }}"></script>
+    <!-- Selection Tool JavaScript -->
+    <script src="{{ url_for('static', filename='js/selection-tool.js') }}"></script>
 </body>
 </html>
 
