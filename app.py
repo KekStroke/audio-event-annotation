@@ -13,6 +13,14 @@ app = Flask(__name__)
 app.config["SECRET_KEY"] = "dev-secret-key-change-in-production"
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024 * 1024  # 16GB max file size
 
+# Инициализация БД
+from src.models import init_db
+init_db()
+
+# Регистрация Blueprints
+from src.api.audio_routes import audio_bp
+app.register_blueprint(audio_bp)
+
 
 # Временный HTML шаблон для главной страницы
 HOME_TEMPLATE = """
