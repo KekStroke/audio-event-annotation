@@ -225,3 +225,6 @@ def check_response_has_error(context):
     assert 'error' in context['response_data'], (
         f"Ответ не содержит поле 'error': {context['response_data']}"
     )
+
+
+

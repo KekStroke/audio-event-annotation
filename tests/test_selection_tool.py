@@ -300,3 +300,6 @@ def check_zoom_uses_region_times(context):
     
     assert times_used or selection_tool_connected, 'Функция zoom не использует start и end региона'
 
+
+
+

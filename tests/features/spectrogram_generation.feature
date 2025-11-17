@@ -49,3 +49,6 @@ Feature: Генерация спектрограммы аудио-файла
     When я отправляю GET запрос на "/api/audio/{id}/spectrogram?start_time=5&end_time=2"
     Then ответ должен иметь статус 400
     And ответ должен содержать JSON с полем "error"
+
+
+

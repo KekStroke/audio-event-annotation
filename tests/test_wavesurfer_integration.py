@@ -368,3 +368,6 @@ def check_zoom_function(context):
     
     assert zoom_function_found or audio_player_connected, 'Функция для изменения zoom уровня не найдена'
 
+
+
+

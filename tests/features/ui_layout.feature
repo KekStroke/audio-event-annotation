@@ -48,3 +48,6 @@ Feature: Базовый UI layout и навигация
     Then CSS должен содержать media query для минимум 1280px width
     And layout должен использовать Flexbox или Grid
 
+
+
+
