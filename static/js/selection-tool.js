@@ -11,8 +11,8 @@
  */
 
 // Глобальные переменные
-let currentRegion = null;
-let currentAudioFileId = null;
+let selectionToolCurrentRegion = null;
+let selectionToolCurrentAudioFileId = null;
 let spectrogramDebounceTimer = null;
 
 // Подписываемся на выбор аудио файла
@@ -50,28 +50,28 @@ function setupRegionHandlers() {
 
     // Событие создания региона
     wavesurfer.on('region-created', (region) => {
-        currentRegion = region;
+        selectionToolCurrentRegion = region;
         updateRegionTimeDisplay(region);
         loadRegionSpectrogram(region);
     });
 
     // Событие обновления региона
     wavesurfer.on('region-updated', (region) => {
-        currentRegion = region;
+        selectionToolCurrentRegion = region;
         updateRegionTimeDisplay(region);
         loadRegionSpectrogram(region);
     });
 
     // Событие удаления региона
     wavesurfer.on('region-removed', () => {
-        currentRegion = null;
+        selectionToolCurrentRegion = null;
         clearRegionTimeDisplay();
         clearRegionSpectrogram();
     });
 
     // Событие клика по региону
     wavesurfer.on('region-clicked', (region) => {
-        currentRegion = region;
+        selectionToolCurrentRegion = region;
         updateRegionTimeDisplay(region);
     });
 }
@@ -119,7 +119,7 @@ function setupKeyboardHandlers() {
  * Воспроизведение выделенного региона
  */
 function playSelection() {
-    if (!wavesurfer || !currentRegion) {
+    if (!wavesurfer || !selectionToolCurrentRegion) {
         console.warn('Нет выделенного региона');
         return;
     }
@@ -128,17 +128,17 @@ function playSelection() {
     wavesurfer.pause();
 
     // Переходим к началу региона
-    wavesurfer.seekTo(currentRegion.start / wavesurfer.getDuration());
+    wavesurfer.seekTo(selectionToolCurrentRegion.start / wavesurfer.getDuration());
 
     // Воспроизводим
     wavesurfer.play();
 
     // Останавливаем в конце региона
-    const regionDuration = currentRegion.end - currentRegion.start;
+    const regionDuration = selectionToolCurrentRegion.end - selectionToolCurrentRegion.start;
     setTimeout(() => {
-        if (wavesurfer.getCurrentTime() >= currentRegion.end) {
+        if (wavesurfer.getCurrentTime() >= selectionToolCurrentRegion.end) {
             wavesurfer.pause();
-            wavesurfer.seekTo(currentRegion.end / wavesurfer.getDuration());
+            wavesurfer.seekTo(selectionToolCurrentRegion.end / wavesurfer.getDuration());
         }
     }, regionDuration * 1000);
 }
@@ -150,7 +150,7 @@ function clearSelection() {
     if (!wavesurfer) return;
 
     wavesurfer.clearRegions();
-    currentRegion = null;
+    selectionToolCurrentRegion = null;
     clearRegionTimeDisplay();
     clearRegionSpectrogram();
 }
@@ -186,7 +186,7 @@ function clearRegionTimeDisplay() {
  * Загрузка спектрограммы для региона (с debounce)
  */
 function loadRegionSpectrogram(region) {
-    if (!currentAudioFileId) {
+    if (!selectionToolCurrentAudioFileId) {
         console.warn('Audio file ID не установлен');
         return;
     }
@@ -201,7 +201,7 @@ function loadRegionSpectrogram(region) {
         const endTime = region.end;
 
         // Формируем URL для получения спектрограммы
-        const spectrogramUrl = `/api/audio/${currentAudioFileId}/spectrogram?start_time=${startTime}&end_time=${endTime}&width=800&height=400`;
+        const spectrogramUrl = `/api/audio/${selectionToolCurrentAudioFileId}/spectrogram?start_time=${startTime}&end_time=${endTime}&width=800&height=400`;
 
         // Загружаем спектрограмму
         fetch(spectrogramUrl)
@@ -258,13 +258,13 @@ function clearRegionSpectrogram() {
  * Zoom на выделенный регион
  */
 function zoomToRegion() {
-    if (!wavesurfer || !currentRegion) {
+    if (!wavesurfer || !selectionToolCurrentRegion) {
         console.warn('Нет выделенного региона для zoom');
         return;
     }
 
     const duration = wavesurfer.getDuration();
-    const regionDuration = currentRegion.end - currentRegion.start;
+    const regionDuration = selectionToolCurrentRegion.end - selectionToolCurrentRegion.start;
 
     // Вычисляем zoom уровень для отображения региона
     // Целевая ширина региона в пикселях (например, 80% от ширины контейнера)
@@ -276,7 +276,7 @@ function zoomToRegion() {
     wavesurfer.zoom(zoomLevel);
 
     // Переходим к началу региона
-    wavesurfer.seekTo(currentRegion.start / duration);
+    wavesurfer.seekTo(selectionToolCurrentRegion.start / duration);
 }
 
 /**
@@ -307,7 +307,7 @@ function formatTime(seconds) {
  * Установка текущего Audio File ID
  */
 function setCurrentAudioFileId(audioFileId) {
-    currentAudioFileId = audioFileId;
+    selectionToolCurrentAudioFileId = audioFileId;
 }
 
 /**

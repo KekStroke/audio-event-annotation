@@ -12,7 +12,7 @@
  */
 
 // Глобальные переменные
-let currentAudioFileId = null;
+let annotationListCurrentAudioFileId = null;
 let annotations = [];
 let annotationRegions = {}; // Маппинг annotation_id -> region
 
@@ -46,7 +46,7 @@ function setupEventListeners() {
  * Установка текущего Audio File ID
  */
 function setCurrentAudioFileId(audioFileId) {
-    currentAudioFileId = audioFileId;
+    annotationListCurrentAudioFileId = audioFileId;
     if (audioFileId) {
         loadAnnotations();
     }
@@ -56,12 +56,12 @@ function setCurrentAudioFileId(audioFileId) {
  * Загрузка списка аннотаций с сервера
  */
 function loadAnnotations() {
-    if (!currentAudioFileId) {
+    if (!annotationListCurrentAudioFileId) {
         console.warn('Audio file ID не установлен');
         return;
     }
 
-    fetch(`/api/annotations?audio_file_id=${currentAudioFileId}`)
+    fetch(`/api/annotations?audio_file_id=${annotationListCurrentAudioFileId}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -391,14 +391,14 @@ function escapeHtml(text) {
  * Экспорт аннотаций в JSON
  */
 function exportAnnotations() {
-    if (!currentAudioFileId) {
+    if (!annotationListCurrentAudioFileId) {
         console.warn('Audio file ID не установлен');
         alert('No audio file selected');
         return;
     }
 
     // Формируем URL для экспорта
-    const exportUrl = `/api/audio/${currentAudioFileId}/export?format=json`;
+    const exportUrl = `/api/audio/${annotationListCurrentAudioFileId}/export?format=json`;
 
     // Создаем временную ссылку для скачивания
     const link = document.createElement('a');

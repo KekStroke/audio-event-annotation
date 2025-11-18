@@ -10,8 +10,8 @@
  */
 
 // Глобальные переменные
-let currentAudioFileId = null;
-let currentRegion = null;
+let annotationFormCurrentAudioFileId = null;
+let annotationFormCurrentRegion = null;
 
 // Подписка на выбор аудио файла в списке
 document.addEventListener('audioFileSelected', (event) => {
@@ -94,15 +94,15 @@ function setupFormValidation() {
  */
 function openAnnotationModal() {
     // Получаем текущий регион из selection-tool.js
-    if (typeof currentRegion !== 'undefined' && currentRegion) {
-        currentRegion = currentRegion;
+    if (typeof selectionToolCurrentRegion !== 'undefined' && selectionToolCurrentRegion) {
+        annotationFormCurrentRegion = selectionToolCurrentRegion;
     } else if (typeof wavesurfer !== 'undefined' && wavesurfer) {
         // Пытаемся получить активный регион из wavesurfer
         const regions = wavesurfer.getActivePlugins().regions;
         if (regions && regions.list) {
             const regionList = Object.values(regions.list);
             if (regionList.length > 0) {
-                currentRegion = regionList[0];
+                annotationFormCurrentRegion = regionList[0];
             }
         }
     }
@@ -147,7 +147,7 @@ function closeAnnotationModal() {
  * Автозаполнение start_time и end_time из региона
  */
 function autofillRegionTimes() {
-    if (!currentRegion) {
+    if (!annotationFormCurrentRegion) {
         return;
     }
 
@@ -155,11 +155,11 @@ function autofillRegionTimes() {
     const startTimeInput = document.getElementById('start-time');
     const endTimeInput = document.getElementById('end-time');
     
-    if (startTimeInput && currentRegion.start !== undefined) {
-        startTimeInput.value = currentRegion.start;
+    if (startTimeInput && annotationFormCurrentRegion.start !== undefined) {
+        startTimeInput.value = annotationFormCurrentRegion.start;
     }
-    if (endTimeInput && currentRegion.end !== undefined) {
-        endTimeInput.value = currentRegion.end;
+    if (endTimeInput && annotationFormCurrentRegion.end !== undefined) {
+        endTimeInput.value = annotationFormCurrentRegion.end;
     }
 }
 
@@ -228,14 +228,14 @@ function saveAnnotation() {
     const endTime = document.getElementById('end-time').value;
 
     // Получаем audio_file_id (должен быть установлен извне)
-    if (!currentAudioFileId) {
+    if (!annotationFormCurrentAudioFileId) {
         showError('Audio file ID не установлен');
         return;
     }
 
     // Формируем данные для отправки
     const annotationData = {
-        audio_file_id: currentAudioFileId,
+        audio_file_id: annotationFormCurrentAudioFileId,
         start_time: parseFloat(startTime),
         end_time: parseFloat(endTime),
         event_label: eventLabel,
@@ -362,14 +362,14 @@ function clearForm() {
  * Установка текущего Audio File ID
  */
 function setCurrentAudioFileId(audioFileId) {
-    currentAudioFileId = audioFileId;
+    annotationFormCurrentAudioFileId = audioFileId;
 }
 
 /**
  * Установка текущего региона
  */
 function setCurrentRegion(region) {
-    currentRegion = region;
+    annotationFormCurrentRegion = region;
 }
 
 /**
