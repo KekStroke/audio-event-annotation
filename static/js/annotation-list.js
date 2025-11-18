@@ -32,6 +32,10 @@ document.addEventListener('audioFileSelected', (event) => {
     }
 });
 
+document.addEventListener('wavesurferRegionsReady', () => {
+    syncWithWavesurferRegions();
+});
+
 /**
  * Инициализация Annotation List
  */
@@ -367,7 +371,6 @@ function syncWithWavesurferRegions() {
     // Создаем регионы для всех аннотаций
     const regionsPlugin = getAnnotationRegionsPlugin();
     if (!regionsPlugin || typeof regionsPlugin.addRegion !== 'function') {
-        console.warn('Плагин regions недоступен — синхронизация регионов аннотаций пропущена');
         return;
     }
 

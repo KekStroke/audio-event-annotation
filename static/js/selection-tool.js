@@ -14,6 +14,7 @@
 let selectionToolCurrentRegion = null;
 let selectionToolCurrentAudioFileId = null;
 let spectrogramDebounceTimer = null;
+let selectionToolRegionHandlersAttached = false;
 
 function getSelectionRegionsPlugin() {
     if (typeof window.getWaveSurferRegionsPlugin === 'function') {
@@ -28,6 +29,10 @@ document.addEventListener('audioFileSelected', (event) => {
     if (audioFileId) {
         setCurrentAudioFileId(audioFileId);
     }
+});
+
+document.addEventListener('wavesurferRegionsReady', () => {
+    setupRegionHandlers();
 });
 
 /**
@@ -53,12 +58,9 @@ function initSelectionTool() {
  * Настройка обработчиков событий регионов
  */
 function setupRegionHandlers() {
-    if (!wavesurfer) return;
+    if (!wavesurfer || selectionToolRegionHandlersAttached) return;
 
-    const regionsPlugin = getSelectionRegionsPlugin();
-    if (!regionsPlugin) {
-        console.warn('WaveSurfer regions plugin не активен — функциональность selection tool ограничена.');
-    }
+    selectionToolRegionHandlersAttached = true;
 
     // Событие создания региона
     wavesurfer.on('region-created', (region) => {

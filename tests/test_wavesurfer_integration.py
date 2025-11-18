@@ -5,6 +5,12 @@ from bs4 import BeautifulSoup
 import pytest
 from pytest_bdd import given, parsers, scenarios, then, when
 
+MODULE_SCRIPTS = {
+    'audio-player': Path('static/js/audio-player.js'),
+    'selection-tool': Path('static/js/selection-tool.js'),
+    'annotation-list': Path('static/js/annotation-list.js'),
+}
+
 # Связываем сценарии из feature файла
 scenarios('features/wavesurfer_integration.feature')
 
@@ -417,6 +423,54 @@ def check_audio_player_plugin_guards():
     )
     assert 'WaveSurfer.Timeline' in content, (
         'Ожидается проверка нового API плагина Timeline'
+    )
+
+
+@then(parsers.parse('скрипт {module_name} должен слушать событие "{event_name}"'))
+def check_module_event_listener(module_name, event_name):
+    """Проверяем что указанный модуль подписывается на событие."""
+    script_path = MODULE_SCRIPTS.get(module_name)
+    assert script_path and script_path.exists(), f'Скрипт для {module_name} не найден'
+    content = script_path.read_text(encoding='utf-8')
+    assert event_name in content, (
+        f'Скрипт {module_name} не слушает событие "{event_name}"'
+    )
+
+
+@then(parsers.parse('скрипт audio-player должен диспатчить событие "{event_name}"'))
+def check_audio_player_dispatch(event_name):
+    """Проверяем что audio-player диспатчит указанное событие."""
+    content = MODULE_SCRIPTS['audio-player'].read_text(encoding='utf-8')
+    assert event_name in content, (
+        f'audio-player.js не диспатчит событие "{event_name}"'
+    )
+
+
+@then('скрипт audio-player должен иметь функцию "ensureWaveSurferInitialized"')
+def check_ensure_wave_surfer_exists():
+    """Проверяем наличие lazy-инициализации WaveSurfer."""
+    content = MODULE_SCRIPTS['audio-player'].read_text(encoding='utf-8')
+    assert 'function ensureWaveSurferInitialized' in content, (
+        'Функция ensureWaveSurferInitialized отсутствует'
+    )
+
+
+@then('обработчик события "audioFileSelected" должен вызывать "ensureWaveSurferInitialized"')
+def check_audio_file_selected_calls_ensure():
+    """Проверяем что обработчик audioFileSelected вызывает ensure."""
+    content = MODULE_SCRIPTS['audio-player'].read_text(encoding='utf-8')
+    assert 'audioFileSelected' in content, 'Обработчик audioFileSelected не найден'
+    assert 'ensureWaveSurferInitialized();' in content, (
+        'audioFileSelected handler не вызывает ensureWaveSurferInitialized'
+    )
+
+
+@then('обработчик события "audioFileSelected" должен вызывать "resumeAudioContext"')
+def check_audio_file_selected_calls_resume():
+    """Проверяем что обработчик audioFileSelected резюмирует AudioContext."""
+    content = MODULE_SCRIPTS['audio-player'].read_text(encoding='utf-8')
+    assert 'resumeAudioContext();' in content, (
+        'audioFileSelected handler не вызывает resumeAudioContext'
     )
 
 

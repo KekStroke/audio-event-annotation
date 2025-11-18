@@ -318,6 +318,9 @@ def check_selection_tool_regions_guard():
     assert any(phrase in content for phrase in guard_phrases), (
         'selection-tool.js должен обрабатывать отсутствие плагина regions'
     )
+    assert 'wavesurferRegionsReady' in content, (
+        'selection-tool.js должен слушать событие wavesurferRegionsReady'
+    )
 
 
 

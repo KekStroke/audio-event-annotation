@@ -23,9 +23,21 @@ Feature: Интеграция wavesurfer.js для аудио визуализа
     When я открываю главную страницу "/"
     Then скрипт audio-file-manager должен пропускать повторный выбор текущего файла
 
+  Scenario: Regions plugin уведомляет остальные модули
+    When я открываю главную страницу "/"
+    Then скрипт audio-player должен диспатчить событие "wavesurferRegionsReady"
+    And скрипт selection-tool должен слушать событие "wavesurferRegionsReady"
+    And скрипт annotation-list должен слушать событие "wavesurferRegionsReady"
+
   Scenario: Плагины wavesurfer инициализируются безопасно
     When я открываю главную страницу "/"
     Then скрипт audio-player должен проверять наличие плагинов перед использованием
+
+  Scenario: WaveSurfer создаётся только после пользовательского жеста
+    When я открываю главную страницу "/"
+    Then скрипт audio-player должен иметь функцию "ensureWaveSurferInitialized"
+    And обработчик события "audioFileSelected" должен вызывать "ensureWaveSurferInitialized"
+    And обработчик события "audioFileSelected" должен вызывать "resumeAudioContext"
 
   Scenario: Работает воспроизведение и пауза
     When я открываю главную страницу "/"
