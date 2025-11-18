@@ -16,6 +16,13 @@ let annotationListCurrentAudioFileId = null;
 let annotations = [];
 let annotationRegions = {}; // Маппинг annotation_id -> region
 
+function getAnnotationRegionsPlugin() {
+    if (typeof window.getWaveSurferRegionsPlugin === 'function') {
+        return window.getWaveSurferRegionsPlugin();
+    }
+    return window.waveSurferRegionsPlugin || null;
+}
+
 // Подписка на выбор аудио файла
 document.addEventListener('audioFileSelected', (event) => {
     const audioFileId = event?.detail?.id;
@@ -227,7 +234,13 @@ function selectAnnotationRegion(annotation) {
     }
 
     // Создаем новый регион
-    const region = wavesurfer.addRegion({
+    const regionsPlugin = getAnnotationRegionsPlugin();
+    if (!regionsPlugin || typeof regionsPlugin.addRegion !== 'function') {
+        console.warn('Плагин regions недоступен — нельзя выделить аннотацию на waveform');
+        return;
+    }
+
+    const region = regionsPlugin.addRegion({
         id: regionId,
         start: annotation.start_time,
         end: annotation.end_time,
@@ -352,9 +365,15 @@ function syncWithWavesurferRegions() {
     annotationRegions = {};
 
     // Создаем регионы для всех аннотаций
+    const regionsPlugin = getAnnotationRegionsPlugin();
+    if (!regionsPlugin || typeof regionsPlugin.addRegion !== 'function') {
+        console.warn('Плагин regions недоступен — синхронизация регионов аннотаций пропущена');
+        return;
+    }
+
     annotations.forEach(annotation => {
         const regionId = `annotation-${annotation.id}`;
-        const region = wavesurfer.addRegion({
+        const region = regionsPlugin.addRegion({
             id: regionId,
             start: annotation.start_time,
             end: annotation.end_time,

@@ -151,7 +151,7 @@ async function loadAudioFiles(selectedAudioFileId = null) {
     }
 
     if (!window.currentAudioFileId && audioFiles.length > 0) {
-        selectAudioFile(audioFiles[0].id);
+        selectAudioFile(audioFiles[0].id, { force: true });
     }
 }
 
@@ -204,9 +204,14 @@ function renderFileList() {
 /**
  * Выбор аудио файла пользователем
  */
-function selectAudioFile(audioFileId) {
+function selectAudioFile(audioFileId, options = {}) {
     const selectedFile = audioFiles.find((file) => file.id === audioFileId);
     if (!selectedFile) {
+        return;
+    }
+
+    const forceSelection = options.force === true;
+    if (!forceSelection && window.currentAudioFileId === audioFileId) {
         return;
     }
 

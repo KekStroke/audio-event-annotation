@@ -107,6 +107,21 @@ def check_minimap_container(context, container_id):
     assert element is not None, f'Контейнер #{container_id} не найден в HTML'
 
 
+@then('скрипт audio-file-manager должен пропускать повторный выбор текущего файла')
+def check_audio_file_manager_selection_guard():
+    """Проверяем что при выборе того же файла повторная загрузка не выполняется."""
+    script_path = Path('static/js/audio-file-manager.js')
+    assert script_path.exists(), 'Файл audio-file-manager.js не найден'
+
+    content = script_path.read_text(encoding='utf-8')
+    assert 'window.currentAudioFileId === audioFileId' in content, (
+        'audio-file-manager.js должен сравнивать текущий и новый audioFileId'
+    )
+    assert 'return;' in content.split('window.currentAudioFileId === audioFileId')[1], (
+        'Должен быть ранний выход при повторном выборе файла'
+    )
+
+
 @then(parsers.parse('должен быть подключен файл "{filename}"'))
 def check_js_file_connected(context, filename):
     """Проверяем подключение JavaScript файла."""

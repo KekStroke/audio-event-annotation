@@ -13,6 +13,9 @@
 // Глобальная переменная для wavesurfer instance
 let wavesurfer = null;
 let currentZoom = 0;
+let currentlyLoadingAudioId = null;
+let lastLoadedAudioId = null;
+let waveSurferRegionsPlugin = null;
 
 /**
  * Поиск доступного плагина wavesurfer независимо от пространства имён.
@@ -100,6 +103,41 @@ function buildWaveSurferPlugins() {
 }
 
 /**
+ * Кэширование активных плагинов WaveSurfer.
+ */
+function cacheWaveSurferPlugins() {
+    if (!wavesurfer || typeof wavesurfer.getActivePlugins !== 'function') {
+        waveSurferRegionsPlugin = null;
+        window.waveSurferRegionsPlugin = null;
+        return;
+    }
+
+    const active = wavesurfer.getActivePlugins();
+    waveSurferRegionsPlugin = (active && active.regions) || null;
+    window.waveSurferRegionsPlugin = waveSurferRegionsPlugin;
+}
+
+/**
+ * Получение экземпляра плагина regions.
+ */
+function getWaveSurferRegionsPlugin() {
+    if (waveSurferRegionsPlugin) {
+        return waveSurferRegionsPlugin;
+    }
+
+    if (wavesurfer && typeof wavesurfer.getActivePlugins === 'function') {
+        const active = wavesurfer.getActivePlugins();
+        waveSurferRegionsPlugin = (active && active.regions) || null;
+        window.waveSurferRegionsPlugin = waveSurferRegionsPlugin;
+        return waveSurferRegionsPlugin;
+    }
+
+    return null;
+}
+
+window.getWaveSurferRegionsPlugin = getWaveSurferRegionsPlugin;
+
+/**
  * Инициализация wavesurfer
  */
 function initWaveSurfer(audioUrl) {
@@ -107,6 +145,11 @@ function initWaveSurfer(audioUrl) {
     if (wavesurfer) {
         wavesurfer.destroy();
     }
+
+    currentlyLoadingAudioId = null;
+    lastLoadedAudioId = null;
+    waveSurferRegionsPlugin = null;
+    window.waveSurferRegionsPlugin = null;
 
     // Создаём новый instance wavesurfer
     wavesurfer = WaveSurfer.create({
@@ -162,6 +205,7 @@ function setupEventHandlers() {
 
     // Событие ready (аудио загружено)
     wavesurfer.on('ready', () => {
+        cacheWaveSurferPlugins();
         updateTimeDisplay();
     });
 
@@ -262,7 +306,28 @@ function loadAudioFile(audioFileId) {
         return;
     }
 
-    wavesurfer.load(`/api/audio/${audioFileId}/stream`);
+    if (currentlyLoadingAudioId === audioFileId || lastLoadedAudioId === audioFileId) {
+        return;
+    }
+
+    currentlyLoadingAudioId = audioFileId;
+
+    const loadPromise = wavesurfer.load(`/api/audio/${audioFileId}/stream`);
+    if (loadPromise && typeof loadPromise.then === 'function') {
+        loadPromise
+            .then(() => {
+                lastLoadedAudioId = audioFileId;
+                currentlyLoadingAudioId = null;
+            })
+            .catch(() => {
+                if (currentlyLoadingAudioId === audioFileId) {
+                    currentlyLoadingAudioId = null;
+                }
+            });
+    } else {
+        lastLoadedAudioId = audioFileId;
+        currentlyLoadingAudioId = null;
+    }
 }
 
 /**
@@ -291,15 +356,25 @@ function zoomOut() {
 function createRegion(start, end, color = '#ff6b6b') {
     if (!wavesurfer) return null;
 
-    const region = wavesurfer.addRegion({
+    const regionsPlugin = getWaveSurferRegionsPlugin();
+    const regionConfig = {
         start: start,
         end: end,
         color: color,
         drag: true,
         resize: true,
-    });
+    };
 
-    return region;
+    if (regionsPlugin && typeof regionsPlugin.addRegion === 'function') {
+        return regionsPlugin.addRegion(regionConfig);
+    }
+
+    if (typeof wavesurfer.addRegion === 'function') {
+        return wavesurfer.addRegion(regionConfig);
+    }
+
+    console.warn('Regions plugin недоступен — создать регион невозможно.');
+    return null;
 }
 
 /**
@@ -308,7 +383,18 @@ function createRegion(start, end, color = '#ff6b6b') {
 function clearRegions() {
     if (!wavesurfer) return;
 
-    wavesurfer.clearRegions();
+    const regionsPlugin = getWaveSurferRegionsPlugin();
+    if (regionsPlugin && typeof regionsPlugin.clearRegions === 'function') {
+        regionsPlugin.clearRegions();
+        return;
+    }
+
+    if (typeof wavesurfer.clearRegions === 'function') {
+        wavesurfer.clearRegions();
+        return;
+    }
+
+    console.warn('Regions plugin недоступен — очистка регионов пропущена.');
 }
 
 /**

@@ -1,4 +1,6 @@
 """Step definitions для тестирования UI выделения фрагментов."""
+from pathlib import Path
+
 from bs4 import BeautifulSoup
 import pytest
 from pytest_bdd import given, parsers, scenarios, then, when
@@ -299,6 +301,23 @@ def check_zoom_uses_region_times(context):
     selection_tool_connected = any('selection-tool.js' in script.get('src', '') for script in scripts)
     
     assert times_used or selection_tool_connected, 'Функция zoom не использует start и end региона'
+
+
+@then('скрипт selection-tool должен проверять доступность плагина regions перед вызовами')
+def check_selection_tool_regions_guard():
+    """Убеждаемся, что selection-tool.js не вызывает методы regions без проверки."""
+    script_path = Path('static/js/selection-tool.js')
+    assert script_path.exists(), 'Файл selection-tool.js не найден'
+
+    content = script_path.read_text(encoding='utf-8')
+    assert 'getWaveSurferRegionsPlugin' in content or 'waveSurferRegionsPlugin' in content, (
+        'selection-tool.js должен получать доступ к regions-плагину через вспомогательную функцию'
+    )
+
+    guard_phrases = ('if (!regionsPlugin', 'typeof regionsPlugin', 'console.warn')
+    assert any(phrase in content for phrase in guard_phrases), (
+        'selection-tool.js должен обрабатывать отсутствие плагина regions'
+    )
 
 
 

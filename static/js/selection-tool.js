@@ -15,6 +15,13 @@ let selectionToolCurrentRegion = null;
 let selectionToolCurrentAudioFileId = null;
 let spectrogramDebounceTimer = null;
 
+function getSelectionRegionsPlugin() {
+    if (typeof window.getWaveSurferRegionsPlugin === 'function') {
+        return window.getWaveSurferRegionsPlugin();
+    }
+    return window.waveSurferRegionsPlugin || null;
+}
+
 // Подписываемся на выбор аудио файла
 document.addEventListener('audioFileSelected', (event) => {
     const audioFileId = event?.detail?.id;
@@ -47,6 +54,11 @@ function initSelectionTool() {
  */
 function setupRegionHandlers() {
     if (!wavesurfer) return;
+
+    const regionsPlugin = getSelectionRegionsPlugin();
+    if (!regionsPlugin) {
+        console.warn('WaveSurfer regions plugin не активен — функциональность selection tool ограничена.');
+    }
 
     // Событие создания региона
     wavesurfer.on('region-created', (region) => {
@@ -149,7 +161,14 @@ function playSelection() {
 function clearSelection() {
     if (!wavesurfer) return;
 
-    wavesurfer.clearRegions();
+    const regionsPlugin = getSelectionRegionsPlugin();
+    if (regionsPlugin && typeof regionsPlugin.clearRegions === 'function') {
+        regionsPlugin.clearRegions();
+    } else if (typeof wavesurfer.clearRegions === 'function') {
+        wavesurfer.clearRegions();
+    } else {
+        console.warn('Невозможно очистить регионы: плагин regions отсутствует');
+    }
     selectionToolCurrentRegion = null;
     clearRegionTimeDisplay();
     clearRegionSpectrogram();
