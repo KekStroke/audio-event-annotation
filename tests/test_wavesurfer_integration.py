@@ -1,4 +1,6 @@
 """Step definitions для тестирования интеграции wavesurfer.js."""
+from pathlib import Path
+
 from bs4 import BeautifulSoup
 import pytest
 from pytest_bdd import given, parsers, scenarios, then, when
@@ -368,6 +370,23 @@ def check_zoom_function(context):
     
     assert zoom_function_found or audio_player_connected, 'Функция для изменения zoom уровня не найдена'
 
+
+@then('скрипт audio-player должен проверять наличие плагинов перед использованием')
+def check_audio_player_plugin_guards():
+    """Убеждаемся что audio-player.js не обращается к плагинам без проверки их наличия."""
+    script_path = Path('static/js/audio-player.js')
+    assert script_path.exists(), 'Файл audio-player.js не найден'
+
+    content = script_path.read_text(encoding='utf-8')
+    assert 'resolveWaveSurferPlugin' in content, (
+        'audio-player.js должен использовать вспомогательную функцию для проверки плагинов'
+    )
+    assert 'WaveSurfer.timeline' in content, (
+        'Ожидается проверка изначального API плагина Timeline'
+    )
+    assert 'WaveSurfer.Timeline' in content, (
+        'Ожидается проверка нового API плагина Timeline'
+    )
 
 
 

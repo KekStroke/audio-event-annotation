@@ -15,6 +15,91 @@ let wavesurfer = null;
 let currentZoom = 0;
 
 /**
+ * Поиск доступного плагина wavesurfer независимо от пространства имён.
+ */
+function resolveWaveSurferPlugin(...getters) {
+    if (typeof WaveSurfer === 'undefined') {
+        console.warn('WaveSurfer не загружен');
+        return null;
+    }
+
+    for (const getter of getters) {
+        try {
+            const pluginFactory = getter();
+            if (pluginFactory && typeof pluginFactory.create === 'function') {
+                return pluginFactory;
+            }
+        } catch (error) {
+            // Игнорируем ошибку и пробуем следующий кандидат
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Создание списка плагинов с учётом их доступности.
+ */
+function buildWaveSurferPlugins() {
+    const plugins = [];
+
+    const timelineFactory = resolveWaveSurferPlugin(
+        () => WaveSurfer.timeline,
+        () => WaveSurfer.Timeline,
+        () => WaveSurfer.plugins && WaveSurfer.plugins.timeline,
+        () => WaveSurfer.plugins && WaveSurfer.plugins.Timeline,
+        () => window.WaveSurferTimeline
+    );
+    if (timelineFactory) {
+        plugins.push(
+            timelineFactory.create({
+                container: '#waveform-timeline',
+                height: 20,
+            })
+        );
+    } else {
+        console.warn('WaveSurfer timeline plugin недоступен, таймлайн отключён.');
+    }
+
+    const regionsFactory = resolveWaveSurferPlugin(
+        () => WaveSurfer.regions,
+        () => WaveSurfer.Regions,
+        () => WaveSurfer.plugins && WaveSurfer.plugins.regions,
+        () => WaveSurfer.plugins && WaveSurfer.plugins.Regions,
+        () => window.WaveSurferRegions
+    );
+    if (regionsFactory) {
+        plugins.push(
+            regionsFactory.create({
+                dragSelection: true,
+            })
+        );
+    } else {
+        console.warn('WaveSurfer regions plugin недоступен, выделение областей отключено.');
+    }
+
+    const minimapFactory = resolveWaveSurferPlugin(
+        () => WaveSurfer.minimap,
+        () => WaveSurfer.Minimap,
+        () => WaveSurfer.plugins && WaveSurfer.plugins.minimap,
+        () => WaveSurfer.plugins && WaveSurfer.plugins.Minimap,
+        () => window.WaveSurferMinimap
+    );
+    if (minimapFactory) {
+        plugins.push(
+            minimapFactory.create({
+                container: '#waveform-minimap',
+                height: 50,
+            })
+        );
+    } else {
+        console.warn('WaveSurfer minimap plugin недоступен, миникарта отключена.');
+    }
+
+    return plugins;
+}
+
+/**
  * Инициализация wavesurfer
  */
 function initWaveSurfer(audioUrl) {
@@ -35,19 +120,7 @@ function initWaveSurfer(audioUrl) {
         height: 200,
         normalize: true,
         interact: true,  // Включаем интерактивность для перемотки
-        plugins: [
-            WaveSurfer.timeline.create({
-                container: '#waveform-timeline',
-                height: 20,
-            }),
-            WaveSurfer.regions.create({
-                dragSelection: true,
-            }),
-            WaveSurfer.minimap.create({
-                container: '#waveform-minimap',
-                height: 50,
-            }),
-        ],
+        plugins: buildWaveSurferPlugins(),
     });
 
     // Загружаем аудио файл
