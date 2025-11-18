@@ -16,6 +16,8 @@ Feature: Интеграция wavesurfer.js для аудио визуализа
     Then HTML должен содержать элемент с id "waveform"
     And должен быть подключен файл "audio-player.js"
     And функция инициализации wavesurfer должна быть определена
+    And HTML должен содержать контейнер "waveform-timeline" для таймлайна
+    And HTML должен содержать контейнер "waveform-minimap" для миникарты
 
   Scenario: Плагины wavesurfer инициализируются безопасно
     When я открываю главную страницу "/"

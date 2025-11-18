@@ -91,6 +91,22 @@ def check_waveform_element(context):
     context['waveform_element'] = waveform
 
 
+@then(parsers.parse('HTML должен содержать контейнер "{container_id}" для таймлайна'))
+def check_timeline_container(context, container_id):
+    """Проверяем наличие контейнера для таймлайна."""
+    assert 'html' in context, 'HTML не был распарсен'
+    element = context['html'].find(id=container_id)
+    assert element is not None, f'Контейнер #{container_id} не найден в HTML'
+
+
+@then(parsers.parse('HTML должен содержать контейнер "{container_id}" для миникарты'))
+def check_minimap_container(context, container_id):
+    """Проверяем наличие контейнера для миникарты."""
+    assert 'html' in context, 'HTML не был распарсен'
+    element = context['html'].find(id=container_id)
+    assert element is not None, f'Контейнер #{container_id} не найден в HTML'
+
+
 @then(parsers.parse('должен быть подключен файл "{filename}"'))
 def check_js_file_connected(context, filename):
     """Проверяем подключение JavaScript файла."""
