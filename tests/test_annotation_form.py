@@ -1,4 +1,6 @@
 """Step definitions для тестирования UI создания аннотаций."""
+from pathlib import Path
+
 from bs4 import BeautifulSoup
 import pytest
 from pytest_bdd import given, parsers, scenarios, then, when
@@ -190,6 +192,19 @@ def check_button_exists(context, button_text):
             break
     
     assert button_found, f'Кнопка "{button_text}" не найдена'
+
+
+@then(parsers.parse('скрипт annotation-form должен использовать overlay "{overlay_id}"'))
+def check_annotation_overlay_usage(overlay_id):
+    """Проверяем что скрипт annotation-form использует заданный overlay."""
+    script_path = Path('static/js/annotation-form.js')
+    assert script_path.exists(), 'Файл annotation-form.js не найден'
+
+    content = script_path.read_text(encoding='utf-8')
+    assert overlay_id in content, f'overlay "{overlay_id}" не используется в annotation-form.js'
+    assert '.modal-overlay' not in content, (
+        'annotation-form.js не должен использовать общий селектор .modal-overlay'
+    )
 
 
 @then('кнопка должна иметь обработчик для отправки POST запроса')

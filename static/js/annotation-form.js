@@ -40,7 +40,7 @@ function setupEventHandlers() {
     }
 
     // Кнопка закрытия модального окна
-    const closeBtn = document.querySelector('.modal-close');
+    const closeBtn = document.querySelector('#annotation-modal .modal-close');
     if (closeBtn) {
         closeBtn.addEventListener('click', closeAnnotationModal);
     }
@@ -58,10 +58,10 @@ function setupEventHandlers() {
     }
 
     // Закрытие по клику на overlay
-    const overlay = document.querySelector('.modal-overlay');
-    if (overlay) {
-        overlay.addEventListener('click', (e) => {
-            if (e.target === overlay) {
+    const annotationOverlay = document.getElementById('annotation-modal-overlay');
+    if (annotationOverlay) {
+        annotationOverlay.addEventListener('click', (e) => {
+            if (e.target === annotationOverlay) {
                 closeAnnotationModal();
             }
         });
@@ -112,7 +112,7 @@ function openAnnotationModal() {
 
     // Показываем модальное окно
     const modal = document.getElementById('annotation-modal');
-    const overlay = document.querySelector('.modal-overlay');
+    const overlay = document.getElementById('annotation-modal-overlay');
     if (modal && overlay) {
         modal.classList.add('active');
         overlay.classList.add('active');
@@ -131,7 +131,7 @@ function openAnnotationModal() {
  */
 function closeAnnotationModal() {
     const modal = document.getElementById('annotation-modal');
-    const overlay = document.querySelector('.modal-overlay');
+    const overlay = document.getElementById('annotation-modal-overlay');
     if (modal && overlay) {
         modal.classList.remove('active');
         overlay.classList.remove('active');
