@@ -16,6 +16,15 @@ let currentAudioFileId = null;
 let annotations = [];
 let annotationRegions = {}; // Маппинг annotation_id -> region
 
+// Подписка на выбор аудио файла
+document.addEventListener('audioFileSelected', (event) => {
+    const audioFileId = event?.detail?.id;
+    if (audioFileId) {
+        setCurrentAudioFileId(audioFileId);
+        loadAnnotations();
+    }
+});
+
 /**
  * Инициализация Annotation List
  */

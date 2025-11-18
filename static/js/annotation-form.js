@@ -13,6 +13,14 @@
 let currentAudioFileId = null;
 let currentRegion = null;
 
+// Подписка на выбор аудио файла в списке
+document.addEventListener('audioFileSelected', (event) => {
+    const audioFileId = event?.detail?.id;
+    if (audioFileId) {
+        setCurrentAudioFileId(audioFileId);
+    }
+});
+
 /**
  * Инициализация Annotation Form
  */

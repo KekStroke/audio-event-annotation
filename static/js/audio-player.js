@@ -182,6 +182,17 @@ function formatTime(seconds) {
 }
 
 /**
+ * Загрузка аудио файла по ID в wavesurfer
+ */
+function loadAudioFile(audioFileId) {
+    if (!audioFileId || !wavesurfer) {
+        return;
+    }
+
+    wavesurfer.load(`/api/audio/${audioFileId}/stream`);
+}
+
+/**
  * Zoom In
  */
 function zoomIn() {
@@ -235,7 +246,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Аудио будет загружено позже при выборе файла
     initWaveSurfer(null);
 
-    // Здесь можно добавить логику загрузки аудио файла
-    // когда пользователь выберет файл из списка
+    // Слушаем выбор аудио файла в других модулях
+    document.addEventListener('audioFileSelected', (event) => {
+        const audioFileId = event?.detail?.id;
+        if (audioFileId) {
+            loadAudioFile(audioFileId);
+        }
+    });
 });
 

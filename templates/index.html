@@ -104,6 +104,30 @@
         </main>
     </div>
 
+    <!-- Модальное окно добавления аудио файла -->
+    <div class="modal-overlay" id="add-file-modal-overlay" aria-hidden="true">
+        <div class="modal" id="add-file-modal" role="dialog" aria-labelledby="add-file-modal-title" aria-modal="true">
+            <div class="modal-header">
+                <h2 class="modal-title" id="add-file-modal-title">Add Audio File</h2>
+                <button type="button" class="modal-close" aria-label="Close add file modal" data-close-modal="add-file">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="message success-message" id="add-file-success"></div>
+                <div class="message error-message" id="add-file-error"></div>
+                <form id="add-file-form" class="annotation-form">
+                    <div class="form-group">
+                        <label for="add-file-path" class="form-label">Audio file path *</label>
+                        <input type="text" id="add-file-path" name="file_path" class="form-input" placeholder="E:\data\audio.wav" required>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="modal-btn modal-btn-secondary" data-close-modal="add-file">Cancel</button>
+                        <button type="submit" class="modal-btn modal-btn-primary" id="add-file-submit">Add File</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Модальное окно для создания аннотации -->
     <div class="modal-overlay" id="annotation-modal-overlay">
         <div class="modal" id="annotation-modal">
@@ -153,6 +177,8 @@
 
     <!-- Audio Player JavaScript -->
     <script src="{{ url_for('static', filename='js/audio-player.js') }}"></script>
+    <!-- Audio File Manager JavaScript -->
+    <script src="{{ url_for('static', filename='js/audio-file-manager.js') }}"></script>
     <!-- Selection Tool JavaScript -->
     <script src="{{ url_for('static', filename='js/selection-tool.js') }}"></script>
     <!-- Annotation Form JavaScript -->

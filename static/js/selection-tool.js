@@ -15,6 +15,14 @@ let currentRegion = null;
 let currentAudioFileId = null;
 let spectrogramDebounceTimer = null;
 
+// Подписываемся на выбор аудио файла
+document.addEventListener('audioFileSelected', (event) => {
+    const audioFileId = event?.detail?.id;
+    if (audioFileId) {
+        setCurrentAudioFileId(audioFileId);
+    }
+});
+
 /**
  * Инициализация Selection Tool
  */

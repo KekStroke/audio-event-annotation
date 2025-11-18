@@ -71,6 +71,52 @@ def check_html_contains_element(context, tag_name):
     assert len(elements) > 0, f'Элемент <{tag_name}> не найден в HTML'
 
 
+@then(parsers.parse('HTML должен содержать кнопку с data-action "{action_name}"'))
+def check_button_with_data_action(context, action_name):
+    """Проверяем наличие кнопки с указанным data-action."""
+    assert 'html' in context, 'HTML не был распарсен'
+    button = context['html'].select_one(f'button[data-action="{action_name}"]')
+    assert button is not None, f'Кнопка с data-action "{action_name}" не найдена'
+
+
+@then('HTML должен содержать модальное окно добавления файла')
+def check_add_file_modal_exists(context):
+    """Проверяем наличие модального окна добавления файла."""
+    assert 'html' in context, 'HTML не был распарсен'
+    modal = context['html'].find(id='add-file-modal-overlay')
+    assert modal is not None, 'Модальное окно добавления файла не найдено'
+
+
+@then(parsers.parse('модальное окно добавления файла должно содержать форму "{form_id}"'))
+def check_modal_contains_form(context, form_id):
+    """Проверяем что в модальном окне есть форма с указанным ID."""
+    assert 'html' in context, 'HTML не был распарсен'
+    modal = context['html'].find(id='add-file-modal-overlay')
+    assert modal is not None, 'Модальное окно добавления файла не найдено'
+    form = modal.find('form', id=form_id)
+    assert form is not None, f'Форма с id "{form_id}" не найдена в модальном окне'
+
+
+@then(parsers.parse('форма добавления файла должна содержать поле ввода "{input_id}"'))
+def check_add_file_form_input(context, input_id):
+    """Проверяем наличие поля ввода в форме добавления файла."""
+    assert 'html' in context, 'HTML не был распарсен'
+    form = context['html'].find('form', id='add-file-form')
+    assert form is not None, 'Форма добавления файла не найдена'
+    input_element = form.find('input', id=input_id)
+    assert input_element is not None, f'Поле ввода с id "{input_id}" не найдено'
+
+
+@then(parsers.parse('форма добавления файла должна содержать кнопку "{button_id}"'))
+def check_add_file_form_button(context, button_id):
+    """Проверяем наличие кнопки в форме добавления файла."""
+    assert 'html' in context, 'HTML не был распарсен'
+    form = context['html'].find('form', id='add-file-form')
+    assert form is not None, 'Форма добавления файла не найдена'
+    button = form.find(id=button_id)
+    assert button is not None, f'Кнопка с id "{button_id}" не найдена в форме добавления файла'
+
+
 @then(parsers.parse('HTML должен содержать элемент с классом "{class_name}"'))
 def check_html_contains_element_with_class(context, class_name):
     """Проверяем наличие элемента с указанным классом."""
