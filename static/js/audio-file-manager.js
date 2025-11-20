@@ -195,7 +195,14 @@ function renderFileList() {
             <span class="file-duration">${duration}</span>
         `;
 
-        item.addEventListener('click', () => selectAudioFile(file.id));
+        item.addEventListener('click', () => {
+            // Initialize WaveSurfer on file click (user gesture!)
+            // This must be synchronous within the click handler
+            if (typeof ensureWaveSurferInitialized === 'function') {
+                ensureWaveSurferInitialized();
+            }
+            selectAudioFile(file.id);
+        });
 
         fileListElement.appendChild(item);
     });

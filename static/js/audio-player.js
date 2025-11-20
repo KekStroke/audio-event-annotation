@@ -262,6 +262,7 @@ function setupEventHandlers() {
   wavesurfer.on("ready", () => {
     cacheWaveSurferPlugins();
     updateTimeDisplay();
+    hideLoadingIndicator();
   });
 
   // Событие region-created (регион создан)
@@ -321,6 +322,26 @@ function formatTime(seconds) {
 }
 
 /**
+ * Показать индикатор загрузки
+ */
+function showLoadingIndicator() {
+  const loadingEl = document.getElementById('waveform-loading');
+  if (loadingEl) {
+    loadingEl.style.display = 'block';
+  }
+}
+
+/**
+ * Скрыть индикатор загрузки
+ */
+function hideLoadingIndicator() {
+  const loadingEl = document.getElementById('waveform-loading');
+  if (loadingEl) {
+    loadingEl.style.display = 'none';
+  }
+}
+
+/**
  * Загрузка аудио файла по ID в wavesurfer
  */
 function loadAudioFile(audioFileId) {
@@ -336,6 +357,7 @@ function loadAudioFile(audioFileId) {
   }
 
   currentlyLoadingAudioId = audioFileId;
+  showLoadingIndicator();
 
   const loadPromise = wavesurfer.load(`/api/audio/${audioFileId}/stream`);
   if (loadPromise && typeof loadPromise.then === "function") {
@@ -343,15 +365,19 @@ function loadAudioFile(audioFileId) {
       .then(() => {
         lastLoadedAudioId = audioFileId;
         currentlyLoadingAudioId = null;
+        hideLoadingIndicator();
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error('Error loading audio:', error);
         if (currentlyLoadingAudioId === audioFileId) {
           currentlyLoadingAudioId = null;
         }
+        hideLoadingIndicator();
       });
   } else {
     lastLoadedAudioId = audioFileId;
     currentlyLoadingAudioId = null;
+    hideLoadingIndicator();
   }
 }
 
@@ -426,20 +452,19 @@ function clearRegions() {
  * Инициализация при загрузке страницы
  */
 document.addEventListener("DOMContentLoaded", () => {
-  // Не инициализируем WaveSurfer сразу - ждём первого взаимодействия
+  // Обработчик выбора аудио файла
   document.addEventListener("audioFileSelected", (event) => {
     const audioFileId = event?.detail?.id;
     if (!audioFileId) {
       return;
     }
 
-    // Только сохраняем ID, но не инициализируем WaveSurfer
-    // Инициализация произойдёт при первом клике на Play или другом взаимодействии
-    window.pendingAudioFileId = audioFileId;
-    
-    // Если WaveSurfer уже был инициализирован ранее, загружаем файл
+    // Если WaveSurfer уже инициализирован (должен быть после клика на файл), загружаем
     if (wavesurfer) {
       loadAudioFile(audioFileId);
+    } else {
+      // Если WaveSurfer еще не инициализирован, сохраняем ID
+      window.pendingAudioFileId = audioFileId;
     }
   });
 
