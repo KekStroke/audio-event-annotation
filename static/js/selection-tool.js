@@ -15,6 +15,8 @@ let selectionToolCurrentRegion = null;
 let selectionToolCurrentAudioFileId = null;
 let spectrogramDebounceTimer = null;
 let selectionToolRegionHandlersAttached = false;
+let selectionToolButtonHandlersAttached = false;
+let selectionToolKeyboardHandlersAttached = false;
 
 function getSelectionRegionsPlugin() {
     if (typeof window.getWaveSurferRegionsPlugin === 'function') {
@@ -32,7 +34,9 @@ document.addEventListener('audioFileSelected', (event) => {
 });
 
 document.addEventListener('wavesurferRegionsReady', () => {
-    setupRegionHandlers();
+    // Reset flag to allow re-attachment when regions plugin is ready
+    selectionToolRegionHandlersAttached = false;
+    initSelectionTool();
 });
 
 /**
@@ -41,6 +45,12 @@ document.addEventListener('wavesurferRegionsReady', () => {
 function initSelectionTool() {
     if (!wavesurfer) {
         console.warn('wavesurfer не инициализирован');
+        return;
+    }
+
+    const regionsPlugin = getSelectionRegionsPlugin();
+    if (!regionsPlugin) {
+        console.warn('Regions plugin не готов, ждём события wavesurferRegionsReady');
         return;
     }
 
@@ -60,33 +70,44 @@ function initSelectionTool() {
 function setupRegionHandlers() {
     if (!wavesurfer || selectionToolRegionHandlersAttached) return;
 
+    const regionsPlugin = getSelectionRegionsPlugin();
+    if (!regionsPlugin) {
+        console.warn('Regions plugin не найден, обработчики не установлены');
+        return;
+    }
+
     selectionToolRegionHandlersAttached = true;
 
+    // WaveSurfer v7: события на плагине regions
     // Событие создания региона
-    wavesurfer.on('region-created', (region) => {
+    regionsPlugin.on('region-created', (region) => {
         selectionToolCurrentRegion = region;
         updateRegionTimeDisplay(region);
         loadRegionSpectrogram(region);
     });
 
     // Событие обновления региона
-    wavesurfer.on('region-updated', (region) => {
+    regionsPlugin.on('region-updated', (region) => {
         selectionToolCurrentRegion = region;
         updateRegionTimeDisplay(region);
         loadRegionSpectrogram(region);
     });
 
-    // Событие удаления региона
-    wavesurfer.on('region-removed', () => {
-        selectionToolCurrentRegion = null;
-        clearRegionTimeDisplay();
-        clearRegionSpectrogram();
-    });
-
     // Событие клика по региону
-    wavesurfer.on('region-clicked', (region) => {
+    regionsPlugin.on('region-clicked', (region) => {
         selectionToolCurrentRegion = region;
         updateRegionTimeDisplay(region);
+    });
+
+    // Обработчик удаления региона - следим за всеми регионами
+    regionsPlugin.on('region-removed', () => {
+        // Проверяем, остались ли регионы
+        const regions = regionsPlugin.getRegions();
+        if (regions.length === 0) {
+            selectionToolCurrentRegion = null;
+            clearRegionTimeDisplay();
+            clearRegionSpectrogram();
+        }
     });
 }
 
@@ -94,6 +115,9 @@ function setupRegionHandlers() {
  * Настройка обработчиков для кнопок
  */
 function setupButtonHandlers() {
+    if (selectionToolButtonHandlersAttached) return;
+    selectionToolButtonHandlersAttached = true;
+
     // Кнопка Play Selection
     const playSelectionBtn = document.getElementById('play-selection');
     if (playSelectionBtn) {
@@ -117,6 +141,9 @@ function setupButtonHandlers() {
  * Настройка обработчиков клавиатуры
  */
 function setupKeyboardHandlers() {
+    if (selectionToolKeyboardHandlersAttached) return;
+    selectionToolKeyboardHandlersAttached = true;
+
     document.addEventListener('keydown', (event) => {
         // Space для play/pause (только если не в input/textarea)
         if (event.code === 'Space' || event.key === ' ') {
@@ -164,13 +191,24 @@ function clearSelection() {
     if (!wavesurfer) return;
 
     const regionsPlugin = getSelectionRegionsPlugin();
-    if (regionsPlugin && typeof regionsPlugin.clearRegions === 'function') {
-        regionsPlugin.clearRegions();
-    } else if (typeof wavesurfer.clearRegions === 'function') {
-        wavesurfer.clearRegions();
-    } else {
+    if (!regionsPlugin) {
         console.warn('Невозможно очистить регионы: плагин regions отсутствует');
+        return;
     }
+
+    // WaveSurfer v7: используем clearRegions() на плагине
+    if (typeof regionsPlugin.clearRegions === 'function') {
+        regionsPlugin.clearRegions();
+    } else {
+        // Альтернатива: удаляем все регионы вручную
+        const regions = regionsPlugin.getRegions();
+        regions.forEach(region => {
+            if (region.remove) {
+                region.remove();
+            }
+        });
+    }
+    
     selectionToolCurrentRegion = null;
     clearRegionTimeDisplay();
     clearRegionSpectrogram();
