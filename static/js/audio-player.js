@@ -269,41 +269,8 @@ function setupEventHandlers() {
     console.log("Region created:", region);
   });
 
-  // Обработчики для кнопок Play/Pause
-  const playBtn = document.querySelector('[data-action="play"]');
-  const pauseBtn = document.querySelector('[data-action="pause"]');
-
-  if (playBtn) {
-    playBtn.addEventListener("click", () => {
-      if (wavesurfer) {
-        wavesurfer.play();
-      }
-    });
-  }
-
-  if (pauseBtn) {
-    pauseBtn.addEventListener("click", () => {
-      if (wavesurfer) {
-        wavesurfer.pause();
-      }
-    });
-  }
-
-  // Обработчики для кнопок Zoom
-  const zoomInBtn = document.getElementById("zoom-in");
-  const zoomOutBtn = document.getElementById("zoom-out");
-
-  if (zoomInBtn) {
-    zoomInBtn.addEventListener("click", () => {
-      zoomIn();
-    });
-  }
-
-  if (zoomOutBtn) {
-    zoomOutBtn.addEventListener("click", () => {
-      zoomOut();
-    });
-  }
+  // Обработчики для кнопок Zoom не нужны здесь
+  // Они устанавливаются в DOMContentLoaded для ленивой инициализации
 }
 
 /**
@@ -459,13 +426,77 @@ function clearRegions() {
  * Инициализация при загрузке страницы
  */
 document.addEventListener("DOMContentLoaded", () => {
+  // Не инициализируем WaveSurfer сразу - ждём первого взаимодействия
   document.addEventListener("audioFileSelected", (event) => {
     const audioFileId = event?.detail?.id;
     if (!audioFileId) {
       return;
     }
 
-    ensureWaveSurferInitialized();
-    loadAudioFile(audioFileId);
+    // Только сохраняем ID, но не инициализируем WaveSurfer
+    // Инициализация произойдёт при первом клике на Play или другом взаимодействии
+    window.pendingAudioFileId = audioFileId;
+    
+    // Если WaveSurfer уже был инициализирован ранее, загружаем файл
+    if (wavesurfer) {
+      loadAudioFile(audioFileId);
+    }
   });
+
+  // Инициализация WaveSurfer при первом клике на Play (реальный user gesture)
+  const playBtn = document.querySelector('[data-action="play"]');
+  const pauseBtn = document.querySelector('[data-action="pause"]');
+  const stopBtn = document.querySelector('[data-action="stop"]');
+
+  if (playBtn) {
+    playBtn.addEventListener('click', () => {
+      // Инициализируем WaveSurfer при первом взаимодействии
+      ensureWaveSurferInitialized();
+      
+      // Загружаем ожидающий файл, если есть
+      if (window.pendingAudioFileId && !lastLoadedAudioId) {
+        loadAudioFile(window.pendingAudioFileId);
+        window.pendingAudioFileId = null;
+      }
+      
+      // Воспроизводим
+      if (wavesurfer) {
+        wavesurfer.play();
+      }
+    });
+  }
+
+  if (pauseBtn) {
+    pauseBtn.addEventListener('click', () => {
+      if (wavesurfer) {
+        wavesurfer.pause();
+      }
+    });
+  }
+
+  if (stopBtn) {
+    stopBtn.addEventListener('click', () => {
+      if (wavesurfer) {
+        wavesurfer.stop();
+      }
+    });
+  }
+
+  // Обработчики для кнопок Zoom с ленивой инициализацией
+  const zoomInBtn = document.getElementById("zoom-in");
+  const zoomOutBtn = document.getElementById("zoom-out");
+
+  if (zoomInBtn) {
+    zoomInBtn.addEventListener("click", () => {
+      ensureWaveSurferInitialized();
+      zoomIn();
+    });
+  }
+
+  if (zoomOutBtn) {
+    zoomOutBtn.addEventListener("click", () => {
+      ensureWaveSurferInitialized();
+      zoomOut();
+    });
+  }
 });
