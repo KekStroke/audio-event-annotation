@@ -232,9 +232,19 @@ function initWaveSurfer(audioUrl) {
 
   cacheWaveSurferPlugins();
   notifyWavesurferReady();
+  
+  // Диагностика: проверяем доступность regions plugin
+  const regionsPlugin = getWaveSurferRegionsPlugin();
+  if (regionsPlugin) {
+    console.log('[WaveSurfer] ✅ WaveSurfer инициализирован, regions plugin доступен');
+    console.log('[WaveSurfer] 📝 Для drag selection: кликните и перетащите мышью по waveform');
+  } else {
+    console.error('[WaveSurfer] ❌ Regions plugin НЕ ИНИЦИАЛИЗИРОВАН! Drag selection не будет работать.');
+  }
 
   // Загружаем аудио файл
   if (audioUrl) {
+    console.log(`[WaveSurfer] 📂 Загружаем аудио: ${audioUrl}`);
     wavesurfer.load(audioUrl);
   }
 
@@ -275,6 +285,14 @@ function setupEventHandlers() {
     cacheWaveSurferPlugins();
     updateTimeDisplay();
     hideLoadingIndicator();
+    
+    // Диагностика: проверяем что regions plugin готов для drag selection
+    const regionsPlugin = getWaveSurferRegionsPlugin();
+    if (regionsPlugin) {
+      console.log('[WaveSurfer] ✅ Waveform готов, regions plugin доступен для drag selection');
+    } else {
+      console.warn('[WaveSurfer] ⚠️ Waveform готов, но regions plugin НЕ ДОСТУПЕН!');
+    }
   });
 
   // Событие region-created (регион создан)

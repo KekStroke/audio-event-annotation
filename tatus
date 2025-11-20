@@ -1,0 +1,87 @@
+[1mdiff --git a/static/js/audio-player.js b/static/js/audio-player.js[m
+[1mindex e34fe45..8cf35a2 100644[m
+[1m--- a/static/js/audio-player.js[m
+[1m+++ b/static/js/audio-player.js[m
+[36m@@ -104,6 +104,17 @@[m [mfunction buildWaveSurferPlugins() {[m
+   return plugins;[m
+ }[m
+ [m
+[32m+[m[32m/**[m
+[32m+[m[32m * Уведомление фронтенда о готовности wavesurfer.[m
+[32m+[m[32m */[m
+[32m+[m[32mfunction notifyWavesurferReady() {[m
+[32m+[m[32m  document.dispatchEvent([m
+[32m+[m[32m    new CustomEvent("wavesurferReady", {[m
+[32m+[m[32m      detail: { wavesurfer: wavesurfer },[m
+[32m+[m[32m    })[m
+[32m+[m[32m  );[m
+[32m+[m[32m}[m
+[32m+[m
+ /**[m
+  * Уведомление фронтенда о готовности плагина regions.[m
+  */[m
+[36m@@ -220,6 +231,7 @@[m [mfunction initWaveSurfer(audioUrl) {[m
+   });[m
+ [m
+   cacheWaveSurferPlugins();[m
+[32m+[m[32m  notifyWavesurferReady();[m
+ [m
+   // Загружаем аудио файл[m
+   if (audioUrl) {[m
+[1mdiff --git a/static/js/selection-tool.js b/static/js/selection-tool.js[m
+[1mindex d5dbf33..f5efe34 100644[m
+[1m--- a/static/js/selection-tool.js[m
+[1m+++ b/static/js/selection-tool.js[m
+[36m@@ -45,13 +45,13 @@[m [mdocument.addEventListener('wavesurferRegionsReady', () => {[m
+ function initSelectionTool() {[m
+     if (!wavesurfer) {[m
+         console.warn('wavesurfer не инициализирован');[m
+[31m-        return;[m
+[32m+[m[32m        return false;[m[41m[m
+     }[m
+ [m
+     const regionsPlugin = getSelectionRegionsPlugin();[m
+     if (!regionsPlugin) {[m
+         console.warn('Regions plugin не готов, ждём события wavesurferRegionsReady');[m
+[31m-        return;[m
+[32m+[m[32m        return false;[m[41m[m
+     }[m
+ [m
+     // Обработчики событий regions[m
+[36m@@ -62,6 +62,8 @@[m [mfunction initSelectionTool() {[m
+ [m
+     // Обработчик горячей клавиши Space[m
+     setupKeyboardHandlers();[m
+[32m+[m[41m    [m
+[32m+[m[32m    return true;[m[41m[m
+ }[m
+ [m
+ /**[m
+[36m@@ -373,20 +375,15 @@[m [mfunction setCurrentAudioFileId(audioFileId) {[m
+  * Инициализация при загрузке страницы[m
+  */[m
+ document.addEventListener('DOMContentLoaded', () => {[m
+[31m-    // Ждём инициализации wavesurfer[m
+[31m-    setTimeout(() => {[m
+[31m-        if (typeof wavesurfer !== 'undefined' && wavesurfer) {[m
+[32m+[m[32m    // Ждём события wavesurferReady, которое диспатчится из audio-player.js[m[41m[m
+[32m+[m[32m    document.addEventListener('wavesurferReady', () => {[m[41m[m
+[32m+[m[32m        // Пытаемся инициализировать - если regions plugin уже готов[m[41m[m
+[32m+[m[32m        const regionsPlugin = getSelectionRegionsPlugin();[m[41m[m
+[32m+[m[32m        if (regionsPlugin) {[m[41m[m
+             initSelectionTool();[m
+[31m-        } else {[m
+[31m-            // Если wavesurfer ещё не загружен, ждём ещё[m
+[31m-            const checkInterval = setInterval(() => {[m
+[31m-                if (typeof wavesurfer !== 'undefined' && wavesurfer) {[m
+[31m-                    initSelectionTool();[m
+[31m-                    clearInterval(checkInterval);[m
+[31m-                }[m
+[31m-            }, 100);[m
+         }[m
+[31m-    }, 500);[m
+[32m+[m[32m        // Если не готов, ждём события wavesurferRegionsReady[m[41m[m
+[32m+[m[32m    }, { once: true });[m[41m[m
+ });[m
+ [m
+ [m
