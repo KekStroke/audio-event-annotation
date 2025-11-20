@@ -202,6 +202,9 @@ function resumeAudioContext() {
   // Не используется в текущей конфигурации
 }
 
+// Флаг для предотвращения рекурсии при обновлении регионов
+let isAdjustingRegion = false;
+
 /**
  * Инициализация wavesurfer
  */
@@ -215,6 +218,7 @@ function initWaveSurfer(audioUrl) {
   lastLoadedAudioId = null;
   waveSurferRegionsPlugin = null;
   window.waveSurferRegionsPlugin = null;
+  isAdjustingRegion = false;
 
   // Создаём новый instance wavesurfer
   // WaveSurfer v7 по умолчанию использует HTML5 audio (не AudioContext)
@@ -293,12 +297,49 @@ function setupAudioEventHandlers() {
 
   // Событие region-created (регион создан)
   wavesurfer.on("region-created", (region) => {
-    // Проверяем и корректируем границы региона
-    const isValid = adjustRegionBounds(region);
+    // Предотвращаем рекурсию
+    if (isAdjustingRegion) {
+      return;
+    }
     
-    // Если регион слишком мал после коррекции - удаляем его
-    if (!isValid && region.remove) {
-      region.remove();
+    // Устанавливаем флаг
+    isAdjustingRegion = true;
+    
+    try {
+      // Проверяем и корректируем границы региона
+      const isValid = adjustRegionBounds(region);
+      
+      // Если регион слишком мал после коррекции - удаляем его
+      if (!isValid && region.remove) {
+        region.remove();
+      }
+    } finally {
+      // Сбрасываем флаг
+      isAdjustingRegion = false;
+    }
+  });
+
+  // Событие region-updated (регион изменяется во время drag/resize)
+  wavesurfer.on("region-updated", (region) => {
+    // Предотвращаем рекурсию
+    if (isAdjustingRegion) {
+      return;
+    }
+    
+    // Устанавливаем флаг
+    isAdjustingRegion = true;
+    
+    try {
+      // Динамически корректируем границы во время изменения
+      const isValid = adjustRegionBounds(region);
+      
+      // Если регион слишком мал после коррекции - удаляем его
+      if (!isValid && region.remove) {
+        region.remove();
+      }
+    } finally {
+      // Сбрасываем флаг
+      isAdjustingRegion = false;
     }
   });
 
@@ -363,12 +404,23 @@ function adjustRegionBounds(region) {
 
   // Обновляем границы если они изменились
   if (adjustedStart !== region.start || adjustedEnd !== region.end) {
-    region.start = adjustedStart;
-    region.end = adjustedEnd;
-    
-    // Обновляем регион если есть метод update
-    if (typeof region.update === 'function') {
-      region.update({ start: adjustedStart, end: adjustedEnd });
+    // Используем setOptions для обновления границ (WaveSurfer v7)
+    if (typeof region.setOptions === 'function') {
+      region.setOptions({ start: adjustedStart, end: adjustedEnd });
+    } else {
+      // Fallback: напрямую изменяем свойства
+      region.start = adjustedStart;
+      region.end = adjustedEnd;
+      
+      // Попытка вызвать update если метод существует
+      if (typeof region.update === 'function') {
+        region.update({ start: adjustedStart, end: adjustedEnd });
+      }
+      
+      // Попытка вызвать render для перерисовки
+      if (typeof region.render === 'function') {
+        region.render();
+      }
     }
   }
 

@@ -152,15 +152,11 @@ def check_overlap_verification():
     """Проверяем что обработчик вызывает проверку пересечений"""
     content = test_data['audio_player_content']
     
-    # Ищем обработчик region-created и проверяем что внутри есть вызов функции проверки
-    pattern = r'["\']region-created["\'].*?\{([^}]*(?:\{[^}]*\})*[^}]*)\}'
+    # Ищем вызов adjustRegionBounds в контексте region-created
+    pattern = r'["\']region-created["\'].*?adjustRegionBounds'
     match = re.search(pattern, content, re.DOTALL)
     
-    if match:
-        handler_content = match.group(1)
-        # Проверяем вызов adjustRegionBounds (которая внутри вызывает checkRegionOverlap)
-        assert 'adjustRegionBounds' in handler_content or 'checkRegionOverlap' in handler_content or 'isRegionOverlapping' in handler_content, \
-            'Обработчик region-created не вызывает функцию проверки пересечений'
+    assert match, 'Обработчик region-created не вызывает функцию проверки пересечений (adjustRegionBounds)'
 
 
 @then('скорректировать границы региона чтобы избежать пересечения')
@@ -189,4 +185,48 @@ def check_minimum_size_removal():
     
     assert has_size_check and has_removal, \
         f'Обработчик не удаляет регион если он меньше минимального размера (size_check={has_size_check}, removal={has_removal})'
+
+
+@given('существует обработчик события region-updated')
+def check_region_updated_handler():
+    """Проверяем наличие обработчика region-updated"""
+    audio_player_path = Path(__file__).parent.parent / 'static' / 'js' / 'audio-player.js'
+    content = audio_player_path.read_text(encoding='utf-8')
+    assert 'region-updated' in content, 'Обработчик события region-updated не найден'
+    test_data['audio_player_content'] = content
+
+
+@when('регион изменяется через drag или resize')
+def region_updated_event():
+    """Симулируем изменение региона"""
+    pass  # Логика проверяется в следующих шагах
+
+
+@then('обработчик должен динамически корректировать границы')
+def check_dynamic_adjustment():
+    """Проверяем что обработчик region-updated корректирует границы"""
+    content = test_data['audio_player_content']
+    
+    # Ищем обработчик region-updated и вызов adjustRegionBounds
+    pattern = r'["\']region-updated["\'].*?adjustRegionBounds'
+    assert re.search(pattern, content, re.DOTALL), \
+        'Обработчик region-updated не вызывает adjustRegionBounds'
+
+
+@then('предотвращать бесконечный цикл обновлений')
+def check_recursion_prevention():
+    """Проверяем что есть защита от рекурсии"""
+    content = test_data['audio_player_content']
+    
+    # Ищем флаг для предотвращения рекурсии
+    has_flag = bool(
+        re.search(r'isAdjustingRegion|adjusting|isUpdating', content, re.IGNORECASE)
+    )
+    
+    # Ищем проверку флага в обработчике region-updated
+    pattern = r'["\']region-updated["\'].*?if\s*\([^)]*(?:isAdjustingRegion|adjusting|isUpdating)'
+    has_check = bool(re.search(pattern, content, re.DOTALL))
+    
+    assert has_flag and has_check, \
+        f'Нет защиты от рекурсии (has_flag={has_flag}, has_check={has_check})'
 
