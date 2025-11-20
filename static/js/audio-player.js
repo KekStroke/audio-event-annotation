@@ -162,8 +162,6 @@ function cacheWaveSurferPlugins() {
   }
   
   window.waveSurferRegionsPlugin = waveSurferRegionsPlugin;
-  console.log('[cacheWaveSurferPlugins] Закэширован regions plugin:', !!waveSurferRegionsPlugin);
-  
   notifyRegionsPluginReady();
 }
 
@@ -258,20 +256,14 @@ function initWaveSurfer(audioUrl) {
   // Они станут доступны только в обработчике 'ready'
   
   notifyWavesurferReady();
-  
-  console.log('[WaveSurfer] 🔧 WaveSurfer создан, ожидаем загрузки аудио для инициализации плагинов...');
 
   // Загружаем аудио файл
   if (audioUrl) {
-    console.log(`[WaveSurfer] 📂 Загружаем аудио: ${audioUrl}`);
     wavesurfer.load(audioUrl);
   }
 
   // Обработчики событий
   setupEventHandlers();
-  
-  console.log('[WaveSurfer] 📋 Подписка на события завершена. Список событий:', 
-    'ready, decode, play, pause, seek, timeupdate, region-created');
 
   return wavesurfer;
 }
@@ -284,11 +276,13 @@ function setupEventHandlers() {
 
   // Событие play
   wavesurfer.on("play", () => {
+    console.log('[WaveSurfer] ▶️ Play event');
     updatePlayPauseButtons(true);
   });
 
   // Событие pause
   wavesurfer.on("pause", () => {
+    console.log('[WaveSurfer] ⏸️ Pause event');
     updatePlayPauseButtons(false);
   });
 
@@ -304,36 +298,19 @@ function setupEventHandlers() {
 
   // Событие ready (аудио загружено) - срабатывает с MediaElement backend
   wavesurfer.on("ready", () => {
-    console.log('[WaveSurfer] 📢 Событие "ready" сработало');
     cacheWaveSurferPlugins();
     updateTimeDisplay();
     hideLoadingIndicator();
-    
-    // Проверяем regions plugin
-    const regionsPlugin = getWaveSurferRegionsPlugin();
-    if (regionsPlugin) {
-      console.log('[WaveSurfer] ✅ Waveform готов, regions plugin доступен');
-      console.log('[WaveSurfer] 🎯 Drag selection УЖЕ активирован через dragSelection: { slop: 5 } в конфигурации!');
-      console.log('[WaveSurfer] 📝 Кликните и перетащите мышью по waveform для создания региона');
-    } else {
-      console.warn('[WaveSurfer] ⚠️ Regions plugin НЕ ДОСТУПЕН!');
-    }
   });
   
   // Событие decode - альтернативное событие для Web Audio API backend
   wavesurfer.on("decode", () => {
-    console.log('[WaveSurfer] 📢 Событие "decode" сработало');
     cacheWaveSurferPlugins();
-    
-    const regionsPlugin = getWaveSurferRegionsPlugin();
-    if (regionsPlugin) {
-      console.log('[WaveSurfer] ✅ Decode завершен, regions plugin готов');
-    }
   });
 
   // Событие region-created (регион создан)
   wavesurfer.on("region-created", (region) => {
-    console.log("Region created:", region);
+    // Регион создан
   });
 
   // Обработчики для кнопок Zoom не нужны здесь
@@ -447,35 +424,23 @@ function hideLoadingIndicator() {
  * Загрузка аудио файла по ID в wavesurfer
  */
 function loadAudioFile(audioFileId) {
-  console.log(`[loadAudioFile] 📞 Вызвана с audioFileId=${audioFileId}, wavesurfer существует=${!!wavesurfer}`);
-  
   if (!audioFileId || !wavesurfer) {
-    console.warn(`[loadAudioFile] ⚠️ ВЫХОД: audioFileId=${audioFileId}, wavesurfer=${!!wavesurfer}`);
     return;
   }
 
-  if (currentlyLoadingAudioId === audioFileId) {
-    console.log(`[loadAudioFile] ⏳ Файл ${audioFileId} уже загружается`);
-    return;
-  }
-  
-  if (lastLoadedAudioId === audioFileId) {
-    console.log(`[loadAudioFile] ✅ Файл ${audioFileId} уже загружен`);
+  if (currentlyLoadingAudioId === audioFileId || lastLoadedAudioId === audioFileId) {
     return;
   }
 
-  console.log(`[loadAudioFile] 📂 Начинаем загрузку файла ${audioFileId}`);
   currentlyLoadingAudioId = audioFileId;
   showLoadingIndicator();
 
   const audioUrl = `/api/audio/${audioFileId}/stream`;
-  console.log(`[loadAudioFile] 🔗 Вызываем wavesurfer.load("${audioUrl}")`);
   
   const loadPromise = wavesurfer.load(audioUrl);
   if (loadPromise && typeof loadPromise.then === "function") {
     loadPromise
       .then(() => {
-        console.log(`[loadAudioFile] ✅ Аудио файл загружен успешно!`);
         lastLoadedAudioId = audioFileId;
         currentlyLoadingAudioId = null;
         hideLoadingIndicator();
@@ -489,18 +454,16 @@ function loadAudioFile(audioFileId) {
           regionsPlugin.enableDragSelection({
             color: 'rgba(74, 158, 255, 0.2)',
           });
-          console.log('[loadAudioFile] 🎯 Drag selection активирован');
         }
       })
       .catch((error) => {
-        console.error('[loadAudioFile] ❌ Ошибка загрузки:', error);
+        console.error('Ошибка загрузки аудио:', error);
         if (currentlyLoadingAudioId === audioFileId) {
           currentlyLoadingAudioId = null;
         }
         hideLoadingIndicator();
       });
   } else {
-    console.log(`[loadAudioFile] ℹ️ wavesurfer.load не вернул Promise`);
     lastLoadedAudioId = audioFileId;
     currentlyLoadingAudioId = null;
     hideLoadingIndicator();
@@ -580,23 +543,16 @@ function clearRegions() {
 document.addEventListener("DOMContentLoaded", () => {
   // Обработчик выбора аудио файла
   document.addEventListener("audioFileSelected", (event) => {
-    console.log('[audioFileSelected] 📨 Событие получено:', event?.detail);
-    
     const audioFileId = event?.detail?.id;
     if (!audioFileId) {
-      console.warn('[audioFileSelected] ⚠️ Нет audioFileId в event.detail');
       return;
     }
 
-    console.log(`[audioFileSelected] 🎵 audioFileId=${audioFileId}, wavesurfer существует=${!!wavesurfer}`);
-
-    // Если WaveSurfer уже инициализирован (должен быть после клика на файл), загружаем
+    // Если WaveSurfer уже инициализирован, загружаем
     if (wavesurfer) {
-      console.log('[audioFileSelected] ✅ WaveSurfer готов, вызываем loadAudioFile');
       loadAudioFile(audioFileId);
     } else {
       // Если WaveSurfer еще не инициализирован, сохраняем ID
-      console.warn('[audioFileSelected] ⚠️ WaveSurfer НЕ инициализирован, сохраняем ID');
       window.pendingAudioFileId = audioFileId;
     }
   });
