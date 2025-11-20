@@ -230,17 +230,13 @@ function initWaveSurfer(audioUrl) {
     plugins: buildWaveSurferPlugins(),
   });
 
-  cacheWaveSurferPlugins();
+  // НЕ вызываем cacheWaveSurferPlugins() здесь!
+  // Плагины еще не готовы после WaveSurfer.create()
+  // Они станут доступны только в обработчике 'ready'
+  
   notifyWavesurferReady();
   
-  // Диагностика: проверяем доступность regions plugin
-  const regionsPlugin = getWaveSurferRegionsPlugin();
-  if (regionsPlugin) {
-    console.log('[WaveSurfer] ✅ WaveSurfer инициализирован, regions plugin доступен');
-    console.log('[WaveSurfer] 📝 Для drag selection: кликните и перетащите мышью по waveform');
-  } else {
-    console.error('[WaveSurfer] ❌ Regions plugin НЕ ИНИЦИАЛИЗИРОВАН! Drag selection не будет работать.');
-  }
+  console.log('[WaveSurfer] 🔧 WaveSurfer создан, ожидаем загрузки аудио для инициализации плагинов...');
 
   // Загружаем аудио файл
   if (audioUrl) {

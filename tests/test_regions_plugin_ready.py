@@ -176,6 +176,65 @@ def check_get_plugin_function():
     assert 'return waveSurferRegionsPlugin' in content or 'return' in content
 
 
+@then('cacheWaveSurferPlugins НЕ должна вызываться синхронно после WaveSurfer.create')
+def check_cache_not_synchronous():
+    """
+    FAILING TEST: cacheWaveSurferPlugins НЕ должна вызываться сразу после WaveSurfer.create!
+    
+    Проблема из консоли:
+    [WaveSurfer] ❌ Regions plugin НЕ ИНИЦИАЛИЗИРОВАН! Drag selection не будет работать.
+    
+    Это происходит потому что:
+    1. WaveSurfer.create() вызывается синхронно
+    2. cacheWaveSurferPlugins() вызывается сразу после create
+    3. НО плагины еще не готовы! Они станут доступны только после внутренней инициализации WaveSurfer
+    4. getActivePlugins() возвращает пустой объект или undefined
+    
+    Решение: НЕ вызывать cacheWaveSurferPlugins сразу, а только в обработчике 'ready'
+    """
+    from pathlib import Path
+    audio_player_path = Path(__file__).parent.parent / 'static' / 'js' / 'audio-player.js'
+    content = audio_player_path.read_text(encoding='utf-8')
+    
+    lines = content.split('\n')
+    
+    # Ищем initWaveSurfer
+    in_init = False
+    found_create = False
+    found_cache_right_after_create = False
+    create_line = None
+    
+    for i, line in enumerate(lines):
+        if 'function initWaveSurfer' in line:
+            in_init = True
+        
+        if in_init and 'WaveSurfer.create({' in line:
+            found_create = True
+            create_line = i
+            
+            # Ищем закрывающую скобку WaveSurfer.create
+            brace_count = 1
+            for j in range(i + 1, min(i + 50, len(lines))):
+                brace_count += lines[j].count('{') - lines[j].count('}')
+                if '});' in lines[j] and brace_count == 0:
+                    # Проверяем следующие 3 строки
+                    for k in range(j + 1, min(j + 4, len(lines))):
+                        if 'cacheWaveSurferPlugins()' in lines[k] and '//' not in lines[k][:lines[k].index('cacheWaveSurferPlugins')]:
+                            found_cache_right_after_create = True
+                            break
+                    break
+            break
+    
+    assert found_create, 'WaveSurfer.create не найден в initWaveSurfer'
+    
+    # FAILING TEST
+    assert not found_cache_right_after_create, \
+        f'FAILING: cacheWaveSurferPlugins() вызывается сразу после WaveSurfer.create (строка ~{create_line}). ' \
+        f'Это вызывает ошибку "[WaveSurfer] ❌ Regions plugin НЕ ИНИЦИАЛИЗИРОВАН!" ' \
+        f'потому что плагины еще не готовы. ' \
+        f'Решение: УДАЛИТЬ этот вызов из initWaveSurfer, оставить только в обработчике "ready"!'
+
+
 @then('событие wavesurferRegionsReady должно срабатывать синхронно после инициализации')
 def check_event_timing():
     """Проверяем, что событие срабатывает вовремя."""
