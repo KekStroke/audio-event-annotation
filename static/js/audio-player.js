@@ -137,14 +137,21 @@ function notifyRegionsPluginReady() {
  */
 function cacheWaveSurferPlugins() {
   if (!wavesurfer || typeof wavesurfer.getActivePlugins !== "function") {
+    console.warn('[cacheWaveSurferPlugins] ⚠️ wavesurfer или getActivePlugins недоступны');
     waveSurferRegionsPlugin = null;
     window.waveSurferRegionsPlugin = null;
     return;
   }
 
   const active = wavesurfer.getActivePlugins();
+  console.log('[cacheWaveSurferPlugins] 🔍 Активные плагины:', active);
+  console.log('[cacheWaveSurferPlugins] 🔍 active.regions:', active ? active.regions : 'active is null/undefined');
+  
   waveSurferRegionsPlugin = (active && active.regions) || null;
   window.waveSurferRegionsPlugin = waveSurferRegionsPlugin;
+  
+  console.log('[cacheWaveSurferPlugins] 📦 Закэширован regions plugin:', !!waveSurferRegionsPlugin);
+  
   notifyRegionsPluginReady();
 }
 
