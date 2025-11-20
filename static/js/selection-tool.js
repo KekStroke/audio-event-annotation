@@ -177,10 +177,11 @@ function playSelection() {
     // Обработчик для остановки в конце региона
     const stopAtRegionEnd = () => {
         if (wavesurfer.getCurrentTime() >= regionEnd) {
+            // КРИТИЧНО: отписываемся ДО вызова pause/seekTo
+            // иначе seekTo вызовет timeupdate снова → бесконечная рекурсия
+            wavesurfer.un('timeupdate', stopAtRegionEnd);
             wavesurfer.pause();
             wavesurfer.seekTo(regionEnd / wavesurfer.getDuration());
-            // Отписываемся от события
-            wavesurfer.un('timeupdate', stopAtRegionEnd);
         }
     };
 
