@@ -190,7 +190,8 @@ def check_wavesurfer_interact():
         if in_create_config:
             brace_count += line.count('{') - line.count('}')
             
-            if 'interact:' in line and 'true' in line:
+            # Проверяем interact с учетом пробелов
+            if 'interact' in line and 'true' in line:
                 found_interact = True
             
             # Если скобки закрылись, выходим

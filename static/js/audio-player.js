@@ -245,26 +245,26 @@ function initWaveSurfer(audioUrl) {
   }
 
   // Обработчики событий
-  setupEventHandlers();
+  setupAudioEventHandlers();
 
   return wavesurfer;
 }
 
 /**
- * Настройка обработчиков событий
+ * Настройка обработчиков событий для аудио плеера
  */
-function setupEventHandlers() {
-  if (!wavesurfer) return;
+function setupAudioEventHandlers() {
+  if (!wavesurfer) {
+    return;
+  }
 
   // Событие play
   wavesurfer.on("play", () => {
-    console.log('[WaveSurfer] ▶️ Play event');
     updatePlayPauseButtons(true);
   });
 
   // Событие pause
   wavesurfer.on("pause", () => {
-    console.log('[WaveSurfer] ⏸️ Pause event');
     updatePlayPauseButtons(false);
   });
 
@@ -309,6 +309,7 @@ function updatePlayPauseButtons(isPlaying) {
   if (playPauseIcon) {
     playPauseIcon.textContent = isPlaying ? '⏸' : '▶';
   }
+  
   if (playPauseText) {
     playPauseText.textContent = isPlaying ? 'Pause' : 'Play';
   }

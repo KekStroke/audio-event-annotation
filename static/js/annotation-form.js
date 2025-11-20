@@ -25,14 +25,14 @@ document.addEventListener('audioFileSelected', (event) => {
  * Инициализация Annotation Form
  */
 function initAnnotationForm() {
-    setupEventHandlers();
+    setupAnnotationEventHandlers();
     setupFormValidation();
 }
 
 /**
  * Настройка обработчиков событий
  */
-function setupEventHandlers() {
+function setupAnnotationEventHandlers() {
     // Кнопка открытия модального окна (из selection-tool.js)
     const openAnnotationBtn = document.getElementById('create-annotation');
     if (openAnnotationBtn) {
