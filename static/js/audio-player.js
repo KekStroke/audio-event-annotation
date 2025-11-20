@@ -144,10 +144,33 @@ function cacheWaveSurferPlugins() {
   }
 
   const active = wavesurfer.getActivePlugins();
-  console.log('[cacheWaveSurferPlugins] 🔍 Активные плагины:', active);
-  console.log('[cacheWaveSurferPlugins] 🔍 active.regions:', active ? active.regions : 'active is null/undefined');
+  console.log('[cacheWaveSurferPlugins] 🔍 Активные плагины (тип):', Array.isArray(active) ? 'Array' : typeof active);
+  console.log('[cacheWaveSurferPlugins] 🔍 Количество плагинов:', Array.isArray(active) ? active.length : 'N/A');
   
-  waveSurferRegionsPlugin = (active && active.regions) || null;
+  // Если это массив, выводим каждый плагин
+  if (Array.isArray(active)) {
+    active.forEach((plugin, index) => {
+      console.log(`[cacheWaveSurferPlugins] 🔍 Плагин [${index}]:`, plugin);
+      console.log(`[cacheWaveSurferPlugins] 🔍 Плагин [${index}] ключи:`, Object.keys(plugin));
+      console.log(`[cacheWaveSurferPlugins] 🔍 Плагин [${index}] constructor.name:`, plugin?.constructor?.name);
+    });
+    
+    // Пытаемся найти regions plugin
+    const regionsPlugin = active.find(p => 
+      p && (
+        p.constructor?.name === 'RegionsPlugin' ||
+        p.constructor?.name === 'Regions' ||
+        typeof p.addRegion === 'function' ||
+        typeof p.enableDragSelection === 'function'
+      )
+    );
+    
+    waveSurferRegionsPlugin = regionsPlugin || null;
+  } else {
+    // Если это объект (старый формат)
+    waveSurferRegionsPlugin = (active && active.regions) || null;
+  }
+  
   window.waveSurferRegionsPlugin = waveSurferRegionsPlugin;
   
   console.log('[cacheWaveSurferPlugins] 📦 Закэширован regions plugin:', !!waveSurferRegionsPlugin);
