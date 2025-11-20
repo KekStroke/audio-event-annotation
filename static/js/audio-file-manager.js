@@ -150,7 +150,12 @@ async function loadAudioFiles(selectedAudioFileId = null) {
         return;
     }
 
+    // Auto-select first file if none is selected
     if (!window.currentAudioFileId && audioFiles.length > 0) {
+        // Initialize WaveSurfer before auto-selecting first file
+        if (typeof ensureWaveSurferInitialized === 'function') {
+            ensureWaveSurferInitialized();
+        }
         selectAudioFile(audioFiles[0].id, { force: true });
     }
 }

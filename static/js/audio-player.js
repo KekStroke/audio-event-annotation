@@ -326,8 +326,26 @@ function formatTime(seconds) {
  */
 function showLoadingIndicator() {
   const loadingEl = document.getElementById('waveform-loading');
+  const waveformEl = document.getElementById('waveform');
+  const timelineEl = document.getElementById('waveform-timeline');
+  const minimapEl = document.getElementById('waveform-minimap');
+  
   if (loadingEl) {
     loadingEl.style.display = 'block';
+  }
+  
+  // Hide waveform containers during loading to prevent overlap
+  if (waveformEl) {
+    waveformEl.style.opacity = '0';
+    waveformEl.style.visibility = 'hidden';
+  }
+  if (timelineEl) {
+    timelineEl.style.opacity = '0';
+    timelineEl.style.visibility = 'hidden';
+  }
+  if (minimapEl) {
+    minimapEl.style.opacity = '0';
+    minimapEl.style.visibility = 'hidden';
   }
 }
 
@@ -336,8 +354,26 @@ function showLoadingIndicator() {
  */
 function hideLoadingIndicator() {
   const loadingEl = document.getElementById('waveform-loading');
+  const waveformEl = document.getElementById('waveform');
+  const timelineEl = document.getElementById('waveform-timeline');
+  const minimapEl = document.getElementById('waveform-minimap');
+  
   if (loadingEl) {
     loadingEl.style.display = 'none';
+  }
+  
+  // Show waveform containers when loading is complete
+  if (waveformEl) {
+    waveformEl.style.opacity = '1';
+    waveformEl.style.visibility = 'visible';
+  }
+  if (timelineEl) {
+    timelineEl.style.opacity = '1';
+    timelineEl.style.visibility = 'visible';
+  }
+  if (minimapEl) {
+    minimapEl.style.opacity = '1';
+    minimapEl.style.visibility = 'visible';
   }
 }
 

@@ -412,6 +412,7 @@ body {
     background-color: var(--bg-tertiary);
     border-radius: 4px;
     overflow: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
 .waveform-loading {
@@ -449,6 +450,7 @@ body {
     margin-top: 0.5rem;
     background-color: var(--bg-tertiary);
     border-radius: 4px;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
 .waveform-minimap {
@@ -457,6 +459,7 @@ body {
     margin-top: 0.5rem;
     background-color: var(--bg-tertiary);
     border-radius: 4px;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
 .time-display {
