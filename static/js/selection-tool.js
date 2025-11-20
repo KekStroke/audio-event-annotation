@@ -373,20 +373,16 @@ function setCurrentAudioFileId(audioFileId) {
  * Инициализация при загрузке страницы
  */
 document.addEventListener('DOMContentLoaded', () => {
-    // Ждём инициализации wavesurfer
-    setTimeout(() => {
-        if (typeof wavesurfer !== 'undefined' && wavesurfer) {
+    // Подписываемся на событие wavesurferReady для правильной последовательности инициализации
+    // Это избегает race condition с плагинами
+    document.addEventListener('wavesurferReady', () => {
+        // Пытаемся инициализировать - если regions plugin уже готов
+        const regionsPlugin = getSelectionRegionsPlugin();
+        if (regionsPlugin) {
             initSelectionTool();
-        } else {
-            // Если wavesurfer ещё не загружен, ждём ещё
-            const checkInterval = setInterval(() => {
-                if (typeof wavesurfer !== 'undefined' && wavesurfer) {
-                    initSelectionTool();
-                    clearInterval(checkInterval);
-                }
-            }, 100);
         }
-    }, 500);
+        // Если не готов, ждём события wavesurferRegionsReady (уже подписаны выше)
+    }, { once: true });
 });
 
 

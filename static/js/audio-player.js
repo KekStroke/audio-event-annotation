@@ -105,6 +105,17 @@ function buildWaveSurferPlugins() {
 }
 
 /**
+ * Уведомление фронтенда о готовности wavesurfer.
+ */
+function notifyWavesurferReady() {
+  document.dispatchEvent(
+    new CustomEvent("wavesurferReady", {
+      detail: { wavesurfer: wavesurfer },
+    })
+  );
+}
+
+/**
  * Уведомление фронтенда о готовности плагина regions.
  */
 function notifyRegionsPluginReady() {
@@ -220,6 +231,7 @@ function initWaveSurfer(audioUrl) {
   });
 
   cacheWaveSurferPlugins();
+  notifyWavesurferReady();
 
   // Загружаем аудио файл
   if (audioUrl) {
@@ -497,7 +509,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Если WaveSurfer уже инициализирован (должен быть после клика на файл), загружаем
     if (wavesurfer) {
-      loadAudioFile(audioFileId);
+    loadAudioFile(audioFileId);
     } else {
       // Если WaveSurfer еще не инициализирован, сохраняем ID
       window.pendingAudioFileId = audioFileId;
