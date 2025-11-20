@@ -199,6 +199,7 @@ function initWaveSurfer(audioUrl) {
     progressColor: "#6bb0ff",
     cursorColor: "#ffffff",
     barWidth: 2,
+    barGap: 1,
     barRadius: 3,
     responsive: true,
     height: 200,

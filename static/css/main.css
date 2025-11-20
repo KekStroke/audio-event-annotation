@@ -270,12 +270,20 @@ body {
     padding: 1rem 1.5rem;
     border-bottom: 1px solid var(--border-color);
     background-color: var(--bg-secondary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .workspace-title {
     font-size: 1.1rem;
     font-weight: 600;
     color: var(--text-primary);
+}
+
+.workspace-controls {
+    display: flex;
+    gap: 0.5rem;
 }
 
 .workspace-content {
@@ -286,13 +294,9 @@ body {
 
 .visualization-container {
     width: 100%;
-    height: 100%;
-    min-height: 400px;
     background-color: var(--bg-secondary);
     border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    padding: 1.5rem;
     border: 1px solid var(--border-color);
 }
 
@@ -396,6 +400,43 @@ body {
     background-color: var(--bg-tertiary);
     color: var(--text-secondary);
     cursor: not-allowed;
+}
+
+/* Waveform visualization */
+#waveform {
+    width: 100%;
+    min-height: 200px;
+    height: 200px;
+    background-color: var(--bg-tertiary);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.waveform-timeline {
+    width: 100%;
+    height: 30px;
+    margin-top: 0.5rem;
+    background-color: var(--bg-tertiary);
+    border-radius: 4px;
+}
+
+.waveform-minimap {
+    width: 100%;
+    height: 60px;
+    margin-top: 0.5rem;
+    background-color: var(--bg-tertiary);
+    border-radius: 4px;
+}
+
+.time-display {
+    margin-top: 1rem;
+    padding: 0.5rem 1rem;
+    background-color: var(--bg-tertiary);
+    border-radius: 4px;
+    text-align: center;
+    font-family: monospace;
+    font-size: 1rem;
+    color: var(--text-primary);
 }
 
 /* Responsive Design - минимум 1280px */
