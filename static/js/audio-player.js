@@ -341,17 +341,17 @@ function setupEventHandlers() {
 }
 
 /**
- * Обновление состояния кнопок Play/Pause
+ * Обновление состояния кнопки Play/Pause
  */
 function updatePlayPauseButtons(isPlaying) {
-  const playBtn = document.querySelector('[data-action="play"]');
-  const pauseBtn = document.querySelector('[data-action="pause"]');
-
-  if (playBtn) {
-    playBtn.disabled = isPlaying;
+  const playPauseIcon = document.getElementById('play-pause-icon');
+  const playPauseText = document.getElementById('play-pause-text');
+  
+  if (playPauseIcon) {
+    playPauseIcon.textContent = isPlaying ? '⏸' : '▶';
   }
-  if (pauseBtn) {
-    pauseBtn.disabled = !isPlaying;
+  if (playPauseText) {
+    playPauseText.textContent = isPlaying ? 'Pause' : 'Play';
   }
 }
 
@@ -601,13 +601,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Инициализация WaveSurfer при первом клике на Play (реальный user gesture)
-  const playBtn = document.querySelector('[data-action="play"]');
-  const pauseBtn = document.querySelector('[data-action="pause"]');
-  const stopBtn = document.querySelector('[data-action="stop"]');
-
-  if (playBtn) {
-    playBtn.addEventListener('click', () => {
+  // Обработчик для объединенной кнопки Play/Pause
+  const playPauseBtn = document.getElementById('play-pause-btn');
+  if (playPauseBtn) {
+    playPauseBtn.addEventListener('click', () => {
       // Инициализируем WaveSurfer при первом взаимодействии
       ensureWaveSurferInitialized();
       
@@ -617,25 +614,52 @@ document.addEventListener("DOMContentLoaded", () => {
         window.pendingAudioFileId = null;
       }
       
-      // Воспроизводим
+      // Переключаем play/pause
       if (wavesurfer) {
-        wavesurfer.play();
+        if (wavesurfer.isPlaying()) {
+          wavesurfer.pause();
+        } else {
+          wavesurfer.play();
+        }
       }
     });
   }
 
-  if (pauseBtn) {
-    pauseBtn.addEventListener('click', () => {
-      if (wavesurfer) {
-        wavesurfer.pause();
-      }
-    });
-  }
-
+  const stopBtn = document.querySelector('[data-action="stop"]');
   if (stopBtn) {
     stopBtn.addEventListener('click', () => {
       if (wavesurfer) {
         wavesurfer.stop();
+      }
+    });
+  }
+
+  // Обработчик изменения playback speed
+  const playbackSpeedInput = document.getElementById('playback-speed');
+  const playbackSpeedValue = document.getElementById('playback-speed-value');
+  if (playbackSpeedInput) {
+    playbackSpeedInput.addEventListener('input', (e) => {
+      const speed = parseFloat(e.target.value);
+      if (playbackSpeedValue) {
+        playbackSpeedValue.textContent = speed.toFixed(1);
+      }
+      if (wavesurfer && typeof wavesurfer.setPlaybackRate === 'function') {
+        wavesurfer.setPlaybackRate(speed);
+      }
+    });
+  }
+
+  // Обработчик изменения volume
+  const volumeInput = document.getElementById('volume');
+  const volumeValue = document.getElementById('volume-value');
+  if (volumeInput) {
+    volumeInput.addEventListener('input', (e) => {
+      const volume = parseInt(e.target.value);
+      if (volumeValue) {
+        volumeValue.textContent = volume;
+      }
+      if (wavesurfer && typeof wavesurfer.setVolume === 'function') {
+        wavesurfer.setVolume(volume / 100); // setVolume принимает значения от 0 до 1
       }
     });
   }

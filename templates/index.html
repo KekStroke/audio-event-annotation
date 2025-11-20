@@ -95,16 +95,21 @@
             <aside class="control-panel" role="complementary">
                 <h2 class="control-panel-title">Controls</h2>
                 <div class="control-group">
-                    <label for="playback-speed" class="control-label">Playback Speed</label>
+                    <label for="playback-speed" class="control-label">
+                        Playback Speed: <span id="playback-speed-value">1.0</span>x
+                    </label>
                     <input type="range" id="playback-speed" class="control-input" min="0.5" max="2" step="0.1" value="1" tabindex="4">
                 </div>
                 <div class="control-group">
-                    <label for="volume" class="control-label">Volume</label>
+                    <label for="volume" class="control-label">
+                        Volume: <span id="volume-value">50</span>%
+                    </label>
                     <input type="range" id="volume" class="control-input" min="0" max="100" value="50" tabindex="5">
                 </div>
                 <div class="control-actions">
-                    <button type="button" class="control-btn" tabindex="6" data-action="play">Play</button>
-                    <button type="button" class="control-btn" tabindex="7" data-action="pause">Pause</button>
+                    <button type="button" class="control-btn" id="play-pause-btn" tabindex="6" data-action="play-pause">
+                        <span id="play-pause-icon">▶</span> <span id="play-pause-text">Play</span>
+                    </button>
                     <button type="button" class="control-btn" tabindex="8" data-action="stop">Stop</button>
                 </div>
             </aside>

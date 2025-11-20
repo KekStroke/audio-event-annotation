@@ -228,14 +228,16 @@ function saveAnnotation() {
     const endTime = document.getElementById('end-time').value;
 
     // Получаем audio_file_id (должен быть установлен извне)
-    if (!annotationFormCurrentAudioFileId) {
+    // Fallback на window.currentAudioFileId если локальная переменная не установлена
+    const audioFileId = annotationFormCurrentAudioFileId || window.currentAudioFileId;
+    if (!audioFileId) {
         showError('Audio file ID не установлен');
         return;
     }
 
     // Формируем данные для отправки
     const annotationData = {
-        audio_file_id: annotationFormCurrentAudioFileId,
+        audio_file_id: audioFileId,
         start_time: parseFloat(startTime),
         end_time: parseFloat(endTime),
         event_label: eventLabel,
