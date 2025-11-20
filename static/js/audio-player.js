@@ -74,7 +74,11 @@ function buildWaveSurferPlugins() {
   if (regionsFactory) {
     plugins.push(
       regionsFactory.create({
-        dragSelection: true,
+        // Из документации: dragSelection должен быть объектом, а не boolean
+        // https://wavesurfer.xyz/example/regions/
+        dragSelection: {
+          slop: 5  // Чувствительность drag selection в пикселях
+        }
       })
     );
   } else {
@@ -246,6 +250,9 @@ function initWaveSurfer(audioUrl) {
 
   // Обработчики событий
   setupEventHandlers();
+  
+  console.log('[WaveSurfer] 📋 Подписка на события завершена. Список событий:', 
+    'ready, decode, play, pause, seek, timeupdate, region-created');
 
   return wavesurfer;
 }
@@ -276,28 +283,32 @@ function setupEventHandlers() {
     updateTimeDisplay();
   });
 
-  // Событие ready (аудио загружено)
+  // Событие ready (аудио загружено) - срабатывает с MediaElement backend
   wavesurfer.on("ready", () => {
+    console.log('[WaveSurfer] 📢 Событие "ready" сработало');
     cacheWaveSurferPlugins();
     updateTimeDisplay();
     hideLoadingIndicator();
     
-    // КРИТИЧНО: Активируем drag selection на regions plugin
+    // Проверяем regions plugin
     const regionsPlugin = getWaveSurferRegionsPlugin();
     if (regionsPlugin) {
       console.log('[WaveSurfer] ✅ Waveform готов, regions plugin доступен');
-      
-      // Включаем drag selection (из документации WaveSurfer.js)
-      if (typeof regionsPlugin.enableDragSelection === 'function') {
-        regionsPlugin.enableDragSelection({
-          color: 'rgba(74, 158, 255, 0.2)', // Полупрозрачный синий
-        });
-        console.log('[WaveSurfer] 🎯 Drag selection АКТИВИРОВАН! Кликните и перетащите мышью по waveform');
-      } else {
-        console.warn('[WaveSurfer] ⚠️ Метод enableDragSelection не найден на regions plugin');
-      }
+      console.log('[WaveSurfer] 🎯 Drag selection УЖЕ активирован через dragSelection: { slop: 5 } в конфигурации!');
+      console.log('[WaveSurfer] 📝 Кликните и перетащите мышью по waveform для создания региона');
     } else {
-      console.warn('[WaveSurfer] ⚠️ Waveform готов, но regions plugin НЕ ДОСТУПЕН!');
+      console.warn('[WaveSurfer] ⚠️ Regions plugin НЕ ДОСТУПЕН!');
+    }
+  });
+  
+  // Событие decode - альтернативное событие для Web Audio API backend
+  wavesurfer.on("decode", () => {
+    console.log('[WaveSurfer] 📢 Событие "decode" сработало');
+    cacheWaveSurferPlugins();
+    
+    const regionsPlugin = getWaveSurferRegionsPlugin();
+    if (regionsPlugin) {
+      console.log('[WaveSurfer] ✅ Decode завершен, regions plugin готов');
     }
   });
 
@@ -449,6 +460,21 @@ function loadAudioFile(audioFileId) {
         lastLoadedAudioId = audioFileId;
         currentlyLoadingAudioId = null;
         hideLoadingIndicator();
+        
+        // КРИТИЧНО: Активируем drag selection после загрузки
+        // Событие 'ready' не срабатывает с MediaElement backend
+        const regionsPlugin = getWaveSurferRegionsPlugin();
+        if (regionsPlugin && typeof regionsPlugin.enableDragSelection === 'function') {
+          regionsPlugin.enableDragSelection({
+            color: 'rgba(74, 158, 255, 0.2)', // Полупрозрачный синий
+          });
+          console.log('[loadAudioFile] 🎯 Drag selection АКТИВИРОВАН! Кликните и перетащите мышью по waveform');
+        } else {
+          console.warn('[loadAudioFile] ⚠️ Не удалось активировать drag selection:', {
+            hasPlugin: !!regionsPlugin,
+            hasMethod: regionsPlugin && typeof regionsPlugin.enableDragSelection === 'function'
+          });
+        }
       })
       .catch((error) => {
         console.error('[loadAudioFile] ❌ Ошибка загрузки:', error);

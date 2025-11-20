@@ -117,9 +117,9 @@ def check_drag_selection_config():
             in_regions_config = True
             continue
         
-        # Внутри конфигурации ищем dragSelection
+        # Внутри конфигурации ищем dragSelection (должен быть объектом, не boolean)
         if in_regions_config:
-            if 'dragSelection' in line and 'true' in line:
+            if 'dragSelection' in line and '{' in line:
                 found_drag_selection = True
                 break
             # Если встретили закрывающую скобку, выходим
@@ -127,7 +127,12 @@ def check_drag_selection_config():
                 break
     
     assert found_regions_factory, 'Не найдено создание regionsFactory'
-    assert found_drag_selection, 'dragSelection: true не найден в конфигурации regions plugin. Это критично для drag selection!'
+    # Обновлено: dragSelection должен быть объектом { slop: 5 }, а не boolean true
+    # Согласно документации: https://wavesurfer.xyz/example/regions/
+    assert found_drag_selection, \
+        'dragSelection: { slop: ... } не найден в конфигурации regions plugin. ' \
+        'Это критично для drag selection! ' \
+        'Согласно документации WaveSurfer, dragSelection должен быть объектом, а не boolean.'
 
 
 @then('buildWaveSurferPlugins создает regions plugin с dragSelection')
@@ -210,24 +215,26 @@ def check_interact_comment():
 @then('regions.enableDragSelection должен быть вызван для активации drag selection')
 def check_enable_drag_selection_called():
     """
-    FAILING TEST: Проверяем что enableDragSelection вызывается!
+    Проверяем что enableDragSelection вызывается!
     
-    Из документации WaveSurfer:
-    regions.enableDragSelection({
-      color: 'rgba(255, 0, 0, 0.1)',
-    })
+    Из исходного кода WaveSurfer regions plugin:
+    https://github.com/katspaugh/wavesurfer.js/blob/d2eaebb/src/plugins/regions.ts
     
-    БЕЗ этого вызова drag selection НЕ РАБОТАЕТ, даже если dragSelection: true в конфигурации!
+    public enableDragSelection(options: Omit<RegionParams, 'start' | 'end'>, threshold = 3)
+    
+    Этот метод ОБЯЗАТЕЛЬНО нужно вызвать явно после загрузки аудио!
     """
     from pathlib import Path
     audio_player_path = Path(__file__).parent.parent / 'static' / 'js' / 'audio-player.js'
     content = audio_player_path.read_text(encoding='utf-8')
     
-    # FAILING TEST
     assert 'enableDragSelection' in content, \
-        'FAILING: enableDragSelection НЕ ВЫЗЫВАЕТСЯ! ' \
-        'Это критично - без этого drag selection не работает. ' \
-        'Нужно вызвать regionsPlugin.enableDragSelection() после получения плагина!'
+        'enableDragSelection НЕ найден в коде! ' \
+        'Согласно исходному коду WaveSurfer, этот метод нужно вызывать явно.'
+    
+    # Проверяем что метод вызывается с параметрами
+    assert 'enableDragSelection({' in content or 'enableDragSelection( {' in content, \
+        'enableDragSelection должен вызываться с параметрами (объект конфигурации)'
 
 
 @then('после вызова ensureWaveSurferInitialized regions plugin должен быть сразу доступен')
