@@ -465,12 +465,15 @@ def check_audio_file_selected_calls_ensure():
     )
 
 
-@then('обработчик события "audioFileSelected" должен вызывать "resumeAudioContext"')
-def check_audio_file_selected_calls_resume():
-    """Проверяем что обработчик audioFileSelected резюмирует AudioContext."""
+@then('WaveSurfer должен использовать MediaElement для избежания AudioContext warning')
+def check_wavesurfer_uses_media_element():
+    """Проверяем что WaveSurfer использует HTML5 audio элемент вместо Web Audio API."""
     content = MODULE_SCRIPTS['audio-player'].read_text(encoding='utf-8')
-    assert 'resumeAudioContext();' in content, (
-        'audioFileSelected handler не вызывает resumeAudioContext'
+    assert "document.createElement('audio')" in content or 'document.createElement("audio")' in content, (
+        'initWaveSurfer не создаёт HTML5 audio элемент'
+    )
+    assert 'media:' in content, (
+        'WaveSurfer.create не использует параметр media'
     )
 
 

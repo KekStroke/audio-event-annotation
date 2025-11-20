@@ -37,7 +37,7 @@ Feature: Интеграция wavesurfer.js для аудио визуализа
     When я открываю главную страницу "/"
     Then скрипт audio-player должен иметь функцию "ensureWaveSurferInitialized"
     And обработчик события "audioFileSelected" должен вызывать "ensureWaveSurferInitialized"
-    And обработчик события "audioFileSelected" должен вызывать "resumeAudioContext"
+    And WaveSurfer должен использовать MediaElement для избежания AudioContext warning
 
   Scenario: Работает воспроизведение и пауза
     When я открываю главную страницу "/"

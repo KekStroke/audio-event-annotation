@@ -161,6 +161,10 @@ function ensureWaveSurferInitialized() {
   return wavesurfer;
 }
 
+/**
+ * Резюм AudioContext (не используется с MediaElement backend)
+ * Оставлено для совместимости, если понадобится вернуться к Web Audio API
+ */
 function resumeAudioContext() {
   if (!wavesurfer || typeof wavesurfer.getAudioContext !== "function") {
     return;
@@ -192,7 +196,13 @@ function initWaveSurfer(audioUrl) {
   waveSurferRegionsPlugin = null;
   window.waveSurferRegionsPlugin = null;
 
-  // Создаём новый instance wavesurfer
+  // Создаём HTML5 audio элемент для избежания AudioContext warning
+  const mediaElement = document.createElement('audio');
+  mediaElement.controls = false;
+  mediaElement.autoplay = false;
+
+  // Создаём новый instance wavesurfer с HTML5 audio элементом
+  // Это избегает создания AudioContext и связанного warning
   wavesurfer = WaveSurfer.create({
     container: "#waveform",
     waveColor: "#4a9eff",
@@ -205,6 +215,7 @@ function initWaveSurfer(audioUrl) {
     height: 200,
     normalize: true,
     interact: true, // Включаем интерактивность для перемотки
+    media: mediaElement, // Используем HTML5 audio вместо Web Audio API
     plugins: buildWaveSurferPlugins(),
   });
 
@@ -455,7 +466,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     ensureWaveSurferInitialized();
-    resumeAudioContext();
     loadAudioFile(audioFileId);
   });
 });
