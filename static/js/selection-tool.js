@@ -33,6 +33,13 @@ document.addEventListener('audioFileSelected', (event) => {
     }
 });
 
+// Также берём текущий Audio File ID из глобальной переменной
+function ensureAudioFileId() {
+    if (!selectionToolCurrentAudioFileId && window.currentAudioFileId) {
+        selectionToolCurrentAudioFileId = window.currentAudioFileId;
+    }
+}
+
 document.addEventListener('wavesurferRegionsReady', () => {
     // Reset flag to allow re-attachment when regions plugin is ready
     selectionToolRegionHandlersAttached = false;
@@ -165,27 +172,33 @@ function playSelection() {
         return;
     }
 
+    const regionEnd = selectionToolCurrentRegion.end;
+    
+    // Обработчик для остановки в конце региона
+    const stopAtRegionEnd = () => {
+        if (wavesurfer.getCurrentTime() >= regionEnd) {
+            wavesurfer.pause();
+            wavesurfer.seekTo(regionEnd / wavesurfer.getDuration());
+            // Отписываемся от события
+            wavesurfer.un('timeupdate', stopAtRegionEnd);
+        }
+    };
+
     // Останавливаем текущее воспроизведение
     wavesurfer.pause();
 
     // Переходим к началу региона
     wavesurfer.seekTo(selectionToolCurrentRegion.start / wavesurfer.getDuration());
 
+    // Подписываемся на событие timeupdate
+    wavesurfer.on('timeupdate', stopAtRegionEnd);
+
     // Воспроизводим
     wavesurfer.play();
-
-    // Останавливаем в конце региона
-    const regionDuration = selectionToolCurrentRegion.end - selectionToolCurrentRegion.start;
-    setTimeout(() => {
-        if (wavesurfer.getCurrentTime() >= selectionToolCurrentRegion.end) {
-            wavesurfer.pause();
-            wavesurfer.seekTo(selectionToolCurrentRegion.end / wavesurfer.getDuration());
-        }
-    }, regionDuration * 1000);
 }
 
 /**
- * Очистка выделения
+ * Очистка выделения (удаляет только текущий выделенный регион)
  */
 function clearSelection() {
     if (!wavesurfer) return;
@@ -196,20 +209,12 @@ function clearSelection() {
         return;
     }
 
-    // WaveSurfer v7: используем clearRegions() на плагине
-    if (typeof regionsPlugin.clearRegions === 'function') {
-        regionsPlugin.clearRegions();
-    } else {
-        // Альтернатива: удаляем все регионы вручную
-        const regions = regionsPlugin.getRegions();
-        regions.forEach(region => {
-            if (region.remove) {
-                region.remove();
-            }
-        });
+    // Удаляем только текущий выделенный регион
+    if (selectionToolCurrentRegion && typeof selectionToolCurrentRegion.remove === 'function') {
+        selectionToolCurrentRegion.remove();
+        selectionToolCurrentRegion = null;
     }
     
-    selectionToolCurrentRegion = null;
     clearRegionTimeDisplay();
     clearRegionSpectrogram();
 }
@@ -245,6 +250,7 @@ function clearRegionTimeDisplay() {
  * Загрузка спектрограммы для региона (с debounce)
  */
 function loadRegionSpectrogram(region) {
+    ensureAudioFileId();
     if (!selectionToolCurrentAudioFileId) {
         console.warn('Audio file ID не установлен');
         return;

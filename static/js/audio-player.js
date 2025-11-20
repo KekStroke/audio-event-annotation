@@ -137,25 +137,15 @@ function notifyRegionsPluginReady() {
  */
 function cacheWaveSurferPlugins() {
   if (!wavesurfer || typeof wavesurfer.getActivePlugins !== "function") {
-    console.warn('[cacheWaveSurferPlugins] ⚠️ wavesurfer или getActivePlugins недоступны');
     waveSurferRegionsPlugin = null;
     window.waveSurferRegionsPlugin = null;
     return;
   }
 
   const active = wavesurfer.getActivePlugins();
-  console.log('[cacheWaveSurferPlugins] 🔍 Активные плагины (тип):', Array.isArray(active) ? 'Array' : typeof active);
-  console.log('[cacheWaveSurferPlugins] 🔍 Количество плагинов:', Array.isArray(active) ? active.length : 'N/A');
   
-  // Если это массив, выводим каждый плагин
+  // Если это массив, ищем regions plugin по характерным методам
   if (Array.isArray(active)) {
-    active.forEach((plugin, index) => {
-      console.log(`[cacheWaveSurferPlugins] 🔍 Плагин [${index}]:`, plugin);
-      console.log(`[cacheWaveSurferPlugins] 🔍 Плагин [${index}] ключи:`, Object.keys(plugin));
-      console.log(`[cacheWaveSurferPlugins] 🔍 Плагин [${index}] constructor.name:`, plugin?.constructor?.name);
-    });
-    
-    // Пытаемся найти regions plugin
     const regionsPlugin = active.find(p => 
       p && (
         p.constructor?.name === 'RegionsPlugin' ||
@@ -172,8 +162,7 @@ function cacheWaveSurferPlugins() {
   }
   
   window.waveSurferRegionsPlugin = waveSurferRegionsPlugin;
-  
-  console.log('[cacheWaveSurferPlugins] 📦 Закэширован regions plugin:', !!waveSurferRegionsPlugin);
+  console.log('[cacheWaveSurferPlugins] Закэширован regions plugin:', !!waveSurferRegionsPlugin);
   
   notifyRegionsPluginReady();
 }
@@ -491,28 +480,16 @@ function loadAudioFile(audioFileId) {
         currentlyLoadingAudioId = null;
         hideLoadingIndicator();
         
-        // КРИТИЧНО: Сначала кэшируем плагины!
-        console.log('[loadAudioFile] 🔄 Кэшируем плагины...');
+        // Кэшируем плагины после загрузки
         cacheWaveSurferPlugins();
         
-        // Теперь активируем drag selection
+        // Активируем drag selection
         const regionsPlugin = getWaveSurferRegionsPlugin();
-        console.log('[loadAudioFile] 🔍 Проверка regions plugin:', {
-          hasPlugin: !!regionsPlugin,
-          hasMethod: regionsPlugin ? typeof regionsPlugin.enableDragSelection === 'function' : null
-        });
-        
         if (regionsPlugin && typeof regionsPlugin.enableDragSelection === 'function') {
           regionsPlugin.enableDragSelection({
-            color: 'rgba(74, 158, 255, 0.2)', // Полупрозрачный синий
+            color: 'rgba(74, 158, 255, 0.2)',
           });
-          console.log('[loadAudioFile] 🎯 Drag selection АКТИВИРОВАН! Кликните и перетащите мышью по waveform');
-        } else {
-          console.warn('[loadAudioFile] ⚠️ Не удалось активировать drag selection:', {
-            hasPlugin: !!regionsPlugin,
-            hasWavesurfer: !!wavesurfer,
-            hasGetActivePlugins: wavesurfer && typeof wavesurfer.getActivePlugins === 'function'
-          });
+          console.log('[loadAudioFile] 🎯 Drag selection активирован');
         }
       })
       .catch((error) => {
