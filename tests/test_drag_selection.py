@@ -207,6 +207,29 @@ def check_interact_comment():
     assert 'interact' in content.lower(), 'Параметр interact отсутствует'
 
 
+@then('regions.enableDragSelection должен быть вызван для активации drag selection')
+def check_enable_drag_selection_called():
+    """
+    FAILING TEST: Проверяем что enableDragSelection вызывается!
+    
+    Из документации WaveSurfer:
+    regions.enableDragSelection({
+      color: 'rgba(255, 0, 0, 0.1)',
+    })
+    
+    БЕЗ этого вызова drag selection НЕ РАБОТАЕТ, даже если dragSelection: true в конфигурации!
+    """
+    from pathlib import Path
+    audio_player_path = Path(__file__).parent.parent / 'static' / 'js' / 'audio-player.js'
+    content = audio_player_path.read_text(encoding='utf-8')
+    
+    # FAILING TEST
+    assert 'enableDragSelection' in content, \
+        'FAILING: enableDragSelection НЕ ВЫЗЫВАЕТСЯ! ' \
+        'Это критично - без этого drag selection не работает. ' \
+        'Нужно вызвать regionsPlugin.enableDragSelection() после получения плагина!'
+
+
 @then('после вызова ensureWaveSurferInitialized regions plugin должен быть сразу доступен')
 def check_regions_available_after_init():
     """

@@ -20,6 +20,7 @@ Feature: Drag selection для создания регионов
     When я открываю главную страницу "/"
     Then в конфигурации WaveSurfer.create должен быть interact: true
     And это позволяет взаимодействовать с waveform
+    And regions.enableDragSelection должен быть вызван для активации drag selection
 
   Scenario: Regions plugin доступен сразу после инициализации WaveSurfer
     When я открываю главную страницу "/"

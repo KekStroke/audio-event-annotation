@@ -282,10 +282,20 @@ function setupEventHandlers() {
     updateTimeDisplay();
     hideLoadingIndicator();
     
-    // Диагностика: проверяем что regions plugin готов для drag selection
+    // КРИТИЧНО: Активируем drag selection на regions plugin
     const regionsPlugin = getWaveSurferRegionsPlugin();
     if (regionsPlugin) {
-      console.log('[WaveSurfer] ✅ Waveform готов, regions plugin доступен для drag selection');
+      console.log('[WaveSurfer] ✅ Waveform готов, regions plugin доступен');
+      
+      // Включаем drag selection (из документации WaveSurfer.js)
+      if (typeof regionsPlugin.enableDragSelection === 'function') {
+        regionsPlugin.enableDragSelection({
+          color: 'rgba(74, 158, 255, 0.2)', // Полупрозрачный синий
+        });
+        console.log('[WaveSurfer] 🎯 Drag selection АКТИВИРОВАН! Кликните и перетащите мышью по waveform');
+      } else {
+        console.warn('[WaveSurfer] ⚠️ Метод enableDragSelection не найден на regions plugin');
+      }
     } else {
       console.warn('[WaveSurfer] ⚠️ Waveform готов, но regions plugin НЕ ДОСТУПЕН!');
     }
@@ -407,36 +417,48 @@ function hideLoadingIndicator() {
  * Загрузка аудио файла по ID в wavesurfer
  */
 function loadAudioFile(audioFileId) {
+  console.log(`[loadAudioFile] 📞 Вызвана с audioFileId=${audioFileId}, wavesurfer существует=${!!wavesurfer}`);
+  
   if (!audioFileId || !wavesurfer) {
+    console.warn(`[loadAudioFile] ⚠️ ВЫХОД: audioFileId=${audioFileId}, wavesurfer=${!!wavesurfer}`);
     return;
   }
 
-  if (
-    currentlyLoadingAudioId === audioFileId ||
-    lastLoadedAudioId === audioFileId
-  ) {
+  if (currentlyLoadingAudioId === audioFileId) {
+    console.log(`[loadAudioFile] ⏳ Файл ${audioFileId} уже загружается`);
+    return;
+  }
+  
+  if (lastLoadedAudioId === audioFileId) {
+    console.log(`[loadAudioFile] ✅ Файл ${audioFileId} уже загружен`);
     return;
   }
 
+  console.log(`[loadAudioFile] 📂 Начинаем загрузку файла ${audioFileId}`);
   currentlyLoadingAudioId = audioFileId;
   showLoadingIndicator();
 
-  const loadPromise = wavesurfer.load(`/api/audio/${audioFileId}/stream`);
+  const audioUrl = `/api/audio/${audioFileId}/stream`;
+  console.log(`[loadAudioFile] 🔗 Вызываем wavesurfer.load("${audioUrl}")`);
+  
+  const loadPromise = wavesurfer.load(audioUrl);
   if (loadPromise && typeof loadPromise.then === "function") {
     loadPromise
       .then(() => {
+        console.log(`[loadAudioFile] ✅ Аудио файл загружен успешно!`);
         lastLoadedAudioId = audioFileId;
         currentlyLoadingAudioId = null;
         hideLoadingIndicator();
       })
       .catch((error) => {
-        console.error('Error loading audio:', error);
+        console.error('[loadAudioFile] ❌ Ошибка загрузки:', error);
         if (currentlyLoadingAudioId === audioFileId) {
           currentlyLoadingAudioId = null;
         }
         hideLoadingIndicator();
       });
   } else {
+    console.log(`[loadAudioFile] ℹ️ wavesurfer.load не вернул Promise`);
     lastLoadedAudioId = audioFileId;
     currentlyLoadingAudioId = null;
     hideLoadingIndicator();
@@ -516,16 +538,23 @@ function clearRegions() {
 document.addEventListener("DOMContentLoaded", () => {
   // Обработчик выбора аудио файла
   document.addEventListener("audioFileSelected", (event) => {
+    console.log('[audioFileSelected] 📨 Событие получено:', event?.detail);
+    
     const audioFileId = event?.detail?.id;
     if (!audioFileId) {
+      console.warn('[audioFileSelected] ⚠️ Нет audioFileId в event.detail');
       return;
     }
 
+    console.log(`[audioFileSelected] 🎵 audioFileId=${audioFileId}, wavesurfer существует=${!!wavesurfer}`);
+
     // Если WaveSurfer уже инициализирован (должен быть после клика на файл), загружаем
     if (wavesurfer) {
-    loadAudioFile(audioFileId);
+      console.log('[audioFileSelected] ✅ WaveSurfer готов, вызываем loadAudioFile');
+      loadAudioFile(audioFileId);
     } else {
       // Если WaveSurfer еще не инициализирован, сохраняем ID
+      console.warn('[audioFileSelected] ⚠️ WaveSurfer НЕ инициализирован, сохраняем ID');
       window.pendingAudioFileId = audioFileId;
     }
   });
