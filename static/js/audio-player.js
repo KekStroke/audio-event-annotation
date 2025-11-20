@@ -194,24 +194,11 @@ function ensureWaveSurferInitialized() {
 }
 
 /**
- * Резюм AudioContext (не используется с MediaElement backend)
- * Оставлено для совместимости, если понадобится вернуться к Web Audio API
+ * Резюм AudioContext (не используется - WaveSurfer v7 по умолчанию использует HTML5 audio)
+ * Оставлено для совместимости
  */
 function resumeAudioContext() {
-  if (!wavesurfer || typeof wavesurfer.getAudioContext !== "function") {
-    return;
-  }
-
-  const audioContext = wavesurfer.getAudioContext();
-  if (
-    audioContext &&
-    audioContext.state === "suspended" &&
-    typeof audioContext.resume === "function"
-  ) {
-    audioContext.resume().catch(() => {
-      /* ignore */
-    });
-  }
+  // Не используется в текущей конфигурации
 }
 
 /**
@@ -228,13 +215,9 @@ function initWaveSurfer(audioUrl) {
   waveSurferRegionsPlugin = null;
   window.waveSurferRegionsPlugin = null;
 
-  // Создаём HTML5 audio элемент для избежания AudioContext warning
-  const mediaElement = document.createElement('audio');
-  mediaElement.controls = false;
-  mediaElement.autoplay = false;
-
-  // Создаём новый instance wavesurfer с HTML5 audio элементом
-  // Это избегает создания AudioContext и связанного warning
+  // Создаём новый instance wavesurfer
+  // WaveSurfer v7 по умолчанию использует HTML5 audio (не AudioContext)
+  // Не передаем собственный media элемент, чтобы события работали правильно
   wavesurfer = WaveSurfer.create({
     container: "#waveform",
     waveColor: "#4a9eff",
@@ -247,7 +230,6 @@ function initWaveSurfer(audioUrl) {
     height: 200,
     normalize: true,
     interact: true, // Включаем интерактивность для перемотки
-    media: mediaElement, // Используем HTML5 audio вместо Web Audio API
     plugins: buildWaveSurferPlugins(),
   });
 
@@ -296,14 +278,14 @@ function setupEventHandlers() {
     updateTimeDisplay();
   });
 
-  // Событие ready (аудио загружено) - срабатывает с MediaElement backend
+  // Событие ready (аудио загружено)
   wavesurfer.on("ready", () => {
     cacheWaveSurferPlugins();
     updateTimeDisplay();
     hideLoadingIndicator();
   });
   
-  // Событие decode - альтернативное событие для Web Audio API backend
+  // Событие decode (альтернативное для Web Audio API backend)
   wavesurfer.on("decode", () => {
     cacheWaveSurferPlugins();
   });

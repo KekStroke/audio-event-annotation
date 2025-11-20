@@ -467,13 +467,20 @@ def check_audio_file_selected_calls_ensure():
 
 @then('WaveSurfer должен использовать MediaElement для избежания AudioContext warning')
 def check_wavesurfer_uses_media_element():
-    """Проверяем что WaveSurfer использует HTML5 audio элемент вместо Web Audio API."""
+    """
+    Проверяем что WaveSurfer v7 использует HTML5 audio по умолчанию.
+    В v7 не нужно создавать свой media элемент - WaveSurfer делает это автоматически.
+    Передача собственного media элемента не рекомендуется, так как события могут не работать.
+    """
     content = MODULE_SCRIPTS['audio-player'].read_text(encoding='utf-8')
-    assert "document.createElement('audio')" in content or 'document.createElement("audio")' in content, (
-        'initWaveSurfer не создаёт HTML5 audio элемент'
+    # WaveSurfer.create() должен быть вызван без параметра media
+    # В v7 HTML5 audio используется по умолчанию
+    assert 'WaveSurfer.create(' in content, (
+        'WaveSurfer.create не найден'
     )
-    assert 'media:' in content, (
-        'WaveSurfer.create не использует параметр media'
+    # НЕ должно быть media: mediaElement в конфигурации
+    assert 'media: mediaElement' not in content and 'media:mediaElement' not in content, (
+        'WaveSurfer.create не должен использовать собственный media элемент (события не работают)'
     )
 
 
