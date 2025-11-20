@@ -212,8 +212,8 @@ function getAnnotationColor(annotation) {
         return annotation.event_type.color;
     }
     
-    // Иначе используем цвет по умолчанию или генерируем на основе ID
-    return '#4a9eff'; // Синий по умолчанию
+    // Иначе используем красный полупрозрачный для аннотаций
+    return 'rgba(255, 100, 100, 0.3)'; // Красный полупрозрачный
 }
 
 /**

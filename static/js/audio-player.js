@@ -77,7 +77,8 @@ function buildWaveSurferPlugins() {
         // Из документации: dragSelection должен быть объектом, а не boolean
         // https://wavesurfer.xyz/example/regions/
         dragSelection: {
-          slop: 5  // Чувствительность drag selection в пикселях
+          slop: 5,  // Чувствительность drag selection в пикселях
+          color: 'rgba(100, 150, 255, 0.3)'  // Голубой полупрозрачный для новых выделений
         }
       })
     );
@@ -292,11 +293,86 @@ function setupAudioEventHandlers() {
 
   // Событие region-created (регион создан)
   wavesurfer.on("region-created", (region) => {
-    // Регион создан
+    // Проверяем и корректируем границы региона
+    const isValid = adjustRegionBounds(region);
+    
+    // Если регион слишком мал после коррекции - удаляем его
+    if (!isValid && region.remove) {
+      region.remove();
+    }
   });
 
   // Обработчики для кнопок Zoom не нужны здесь
   // Они устанавливаются в DOMContentLoaded для ленивой инициализации
+}
+
+/**
+ * Проверка пересечения двух регионов
+ * @param {number} start1 - Начало первого региона
+ * @param {number} end1 - Конец первого региона
+ * @param {number} start2 - Начало второго региона
+ * @param {number} end2 - Конец второго региона
+ * @returns {boolean} - true если регионы пересекаются
+ */
+function checkRegionOverlap(start1, end1, start2, end2) {
+  return end1 > start2 && start1 < end2;
+}
+
+/**
+ * Коррекция границ региона чтобы избежать пересечений
+ * @param {Object} region - Регион для коррекции
+ * @returns {boolean} - true если регион валиден после коррекции
+ */
+function adjustRegionBounds(region) {
+  const MIN_REGION_SIZE = 1.0; // Минимальный размер региона в секундах
+  const regionsPlugin = getWaveSurferRegionsPlugin();
+  
+  if (!regionsPlugin || !region) {
+    return true;
+  }
+
+  // Получаем все существующие регионы кроме текущего
+  const allRegions = regionsPlugin.getRegions ? regionsPlugin.getRegions() : [];
+  const existingRegions = allRegions.filter(r => r.id !== region.id);
+
+  let adjustedStart = region.start;
+  let adjustedEnd = region.end;
+
+  // Проверяем пересечения со всеми существующими регионами
+  for (const existingRegion of existingRegions) {
+    if (checkRegionOverlap(adjustedStart, adjustedEnd, existingRegion.start, existingRegion.end)) {
+      // Есть пересечение - корректируем границы
+      
+      // Если новый регион начинается раньше
+      if (adjustedStart < existingRegion.start) {
+        // Обрезаем конец до начала существующего
+        adjustedEnd = Math.min(adjustedEnd, existingRegion.start);
+      } 
+      // Если новый регион начинается позже
+      else if (adjustedStart >= existingRegion.start && adjustedStart < existingRegion.end) {
+        // Сдвигаем начало к концу существующего
+        adjustedStart = existingRegion.end;
+      }
+    }
+  }
+
+  // Проверяем минимальный размер
+  if (adjustedEnd - adjustedStart < MIN_REGION_SIZE) {
+    return false; // Регион слишком мал, нужно удалить
+  }
+
+  // Обновляем границы если они изменились
+  if (adjustedStart !== region.start || adjustedEnd !== region.end) {
+    region.start = adjustedStart;
+    region.end = adjustedEnd;
+    
+    // Обновляем регион если есть метод update
+    if (typeof region.update === 'function') {
+      region.update({ start: adjustedStart, end: adjustedEnd });
+    }
+  }
+
+  return true; // Регион валиден
 }
 
 /**
