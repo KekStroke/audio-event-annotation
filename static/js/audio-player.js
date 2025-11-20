@@ -461,9 +461,17 @@ function loadAudioFile(audioFileId) {
         currentlyLoadingAudioId = null;
         hideLoadingIndicator();
         
-        // КРИТИЧНО: Активируем drag selection после загрузки
-        // Событие 'ready' не срабатывает с MediaElement backend
+        // КРИТИЧНО: Сначала кэшируем плагины!
+        console.log('[loadAudioFile] 🔄 Кэшируем плагины...');
+        cacheWaveSurferPlugins();
+        
+        // Теперь активируем drag selection
         const regionsPlugin = getWaveSurferRegionsPlugin();
+        console.log('[loadAudioFile] 🔍 Проверка regions plugin:', {
+          hasPlugin: !!regionsPlugin,
+          hasMethod: regionsPlugin ? typeof regionsPlugin.enableDragSelection === 'function' : null
+        });
+        
         if (regionsPlugin && typeof regionsPlugin.enableDragSelection === 'function') {
           regionsPlugin.enableDragSelection({
             color: 'rgba(74, 158, 255, 0.2)', // Полупрозрачный синий
@@ -472,7 +480,8 @@ function loadAudioFile(audioFileId) {
         } else {
           console.warn('[loadAudioFile] ⚠️ Не удалось активировать drag selection:', {
             hasPlugin: !!regionsPlugin,
-            hasMethod: regionsPlugin && typeof regionsPlugin.enableDragSelection === 'function'
+            hasWavesurfer: !!wavesurfer,
+            hasGetActivePlugins: wavesurfer && typeof wavesurfer.getActivePlugins === 'function'
           });
         }
       })
