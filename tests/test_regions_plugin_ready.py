@@ -150,7 +150,7 @@ def check_selection_tool_gets_plugin():
     content = selection_tool_path.read_text(encoding='utf-8')
     
     assert 'getSelectionRegionsPlugin' in content, 'Функция getSelectionRegionsPlugin не найдена'
-    assert 'getWaveSurferRegionsPlugin' in content or 'waveSurferRegionsPlugin' in content
+    assert 'getWaveSurferRegionsPlugin' in content, 'selection-tool должен запрашивать regions plugin через getWaveSurferRegionsPlugin'
 
 
 @then('regions plugin должен быть доступен после загрузки аудио')
@@ -160,9 +160,8 @@ def check_plugin_available_after_load():
     audio_player_path = Path(__file__).parent.parent / 'static' / 'js' / 'audio-player.js'
     content = audio_player_path.read_text(encoding='utf-8')
     
-    # Проверяем, что cacheWaveSurferPlugins вызывается после ready
     assert 'wavesurfer.on("ready"' in content or 'wavesurfer.on(\'ready\'' in content
-    assert 'cacheWaveSurferPlugins' in content
+    assert 'notifyRegionsPluginReady' in content
 
 
 @then('функция getWaveSurferRegionsPlugin должна возвращать plugin')
@@ -173,66 +172,17 @@ def check_get_plugin_function():
     content = audio_player_path.read_text(encoding='utf-8')
     
     assert 'function getWaveSurferRegionsPlugin' in content or 'getWaveSurferRegionsPlugin()' in content
-    assert 'return waveSurferRegionsPlugin' in content or 'return' in content
+    assert 'getActivePlugins' in content, 'Функция должна использовать wavesurfer.getActivePlugins()'
 
 
-@then('cacheWaveSurferPlugins НЕ должна вызываться синхронно после WaveSurfer.create')
-def check_cache_not_synchronous():
-    """
-    FAILING TEST: cacheWaveSurferPlugins НЕ должна вызываться сразу после WaveSurfer.create!
-    
-    Проблема из консоли:
-    [WaveSurfer] ❌ Regions plugin НЕ ИНИЦИАЛИЗИРОВАН! Drag selection не будет работать.
-    
-    Это происходит потому что:
-    1. WaveSurfer.create() вызывается синхронно
-    2. cacheWaveSurferPlugins() вызывается сразу после create
-    3. НО плагины еще не готовы! Они станут доступны только после внутренней инициализации WaveSurfer
-    4. getActivePlugins() возвращает пустой объект или undefined
-    
-    Решение: НЕ вызывать cacheWaveSurferPlugins сразу, а только в обработчике 'ready'
-    """
+@then('получение plugin не должно зависеть от кэширования')
+def ensure_plugin_access_without_cache():
+    """Проверяем, что код не содержит кэширующей логики."""
     from pathlib import Path
     audio_player_path = Path(__file__).parent.parent / 'static' / 'js' / 'audio-player.js'
     content = audio_player_path.read_text(encoding='utf-8')
-    
-    lines = content.split('\n')
-    
-    # Ищем initWaveSurfer
-    in_init = False
-    found_create = False
-    found_cache_right_after_create = False
-    create_line = None
-    
-    for i, line in enumerate(lines):
-        if 'function initWaveSurfer' in line:
-            in_init = True
-        
-        if in_init and 'WaveSurfer.create({' in line:
-            found_create = True
-            create_line = i
-            
-            # Ищем закрывающую скобку WaveSurfer.create
-            brace_count = 1
-            for j in range(i + 1, min(i + 50, len(lines))):
-                brace_count += lines[j].count('{') - lines[j].count('}')
-                if '});' in lines[j] and brace_count == 0:
-                    # Проверяем следующие 3 строки
-                    for k in range(j + 1, min(j + 4, len(lines))):
-                        if 'cacheWaveSurferPlugins()' in lines[k] and '//' not in lines[k][:lines[k].index('cacheWaveSurferPlugins')]:
-                            found_cache_right_after_create = True
-                            break
-                    break
-            break
-    
-    assert found_create, 'WaveSurfer.create не найден в initWaveSurfer'
-    
-    # FAILING TEST
-    assert not found_cache_right_after_create, \
-        f'FAILING: cacheWaveSurferPlugins() вызывается сразу после WaveSurfer.create (строка ~{create_line}). ' \
-        f'Это вызывает ошибку "[WaveSurfer] ❌ Regions plugin НЕ ИНИЦИАЛИЗИРОВАН!" ' \
-        f'потому что плагины еще не готовы. ' \
-        f'Решение: УДАЛИТЬ этот вызов из initWaveSurfer, оставить только в обработчике "ready"!'
+    assert 'cacheWaveSurferPlugins' not in content, 'Функция cacheWaveSurferPlugins должна быть удалена'
+    assert 'window.waveSurferRegionsPlugin' not in content, 'Не должно быть ссылок на window.waveSurferRegionsPlugin'
 
 
 @then('событие wavesurferRegionsReady должно срабатывать синхронно после инициализации')
@@ -242,40 +192,12 @@ def check_event_timing():
     audio_player_path = Path(__file__).parent.parent / 'static' / 'js' / 'audio-player.js'
     content = audio_player_path.read_text(encoding='utf-8')
     
-    # Ищем вызовы в контексте функции initWaveSurfer
-    lines = content.split('\n')
-    
-    in_init_function = False
-    init_function_start = None
-    cache_line = None
-    notify_wavesurfer_ready_line = None
-    
-    for i, line in enumerate(lines):
-        # Находим начало функции initWaveSurfer
-        if 'function initWaveSurfer' in line:
-            in_init_function = True
-            init_function_start = i
-            continue
-        
-        # Ищем вызовы внутри функции
-        if in_init_function:
-            if 'cacheWaveSurferPlugins()' in line and 'function' not in line:
-                cache_line = i
-            if 'notifyWavesurferReady()' in line and 'function' not in line:
-                notify_wavesurfer_ready_line = i
-            
-            # Конец функции initWaveSurfer
-            if line.strip().startswith('}') and cache_line is not None:
-                # Нашли закрывающую скобку после того как нашли cache_line
-                break
-    
-    # Проверки
-    assert init_function_start is not None, 'Функция initWaveSurfer не найдена'
-    assert cache_line is not None, 'Не найден вызов cacheWaveSurferPlugins() в initWaveSurfer'
-    assert notify_wavesurfer_ready_line is not None, \
-        'Не найден вызов notifyWavesurferReady() в initWaveSurfer - нужно добавить после cacheWaveSurferPlugins()'
-    assert notify_wavesurfer_ready_line > cache_line, \
-        f'notifyWavesurferReady() (строка {notify_wavesurfer_ready_line}) должен вызываться ПОСЛЕ cacheWaveSurferPlugins() (строка {cache_line}) в initWaveSurfer'
+    assert 'notifyRegionsPluginReady()' in content, \
+        'Ожидается вызов notifyRegionsPluginReady() для уведомления listeners'
+    assert 'wavesurfer.on("ready"' in content or 'wavesurfer.on(\'ready\'' in content, \
+        'Должен быть обработчик события ready'
+    assert 'wavesurfer.on("decode"' in content or 'wavesurfer.on(\'decode\'' in content, \
+        'Должен быть обработчик события decode'
 
 
 @then('warning "Regions plugin не готов" не должен появляться')

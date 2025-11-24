@@ -19,8 +19,8 @@ from src.audio.metadata import (
     validate_audio_format,
 )
 from src.audio.streaming import stream_audio_file
-from src.audio.waveform import get_or_generate_waveform
-from src.audio.spectrogram import SpectrogramParams, get_or_generate_spectrogram
+from src.audio.waveform import generate_waveform
+from src.audio.spectrogram import SpectrogramParams, generate_spectrogram
 from src.models import get_db, AudioFile, AudioFileStatus
 from src.models.audio_file import AudioFileStatus
 
@@ -271,7 +271,7 @@ def get_waveform(audio_file_id: str):
 
             # Генерация waveform
             try:
-                png_data = get_or_generate_waveform(
+                png_data = generate_waveform(
                     audio_file.file_path, width=width, height=height, color=color
                 )
             except Exception as e:
@@ -353,7 +353,7 @@ def get_spectrogram(audio_file_id: str):
                 return jsonify({"error": "Audio file not found on disk"}), 404
 
             try:
-                png_data = get_or_generate_spectrogram(audio_file.file_path, params)
+                png_data = generate_spectrogram(audio_file.file_path, params)
             except ValueError as value_error:
                 return jsonify({"error": str(value_error)}), 400
             except Exception as e:

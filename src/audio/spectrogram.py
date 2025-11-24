@@ -5,15 +5,11 @@
 - Генерация спектрограммы выбранного временного интервала
 - Настраиваемые параметры изображения (width, height, color_map)
 - STFT с параметрами n_fft=2048, hop_length=512
-- Кэширование изображений на диске с учётом параметров
 """
 from __future__ import annotations
 
-import hashlib
 import io
-import os
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Optional
 
 import librosa
@@ -27,7 +23,6 @@ import numpy as np
 DEFAULT_WIDTH = 1024
 DEFAULT_HEIGHT = 512
 DEFAULT_COLOR_MAP = 'viridis'
-DEFAULT_CACHE_DIR = Path('cache/spectrograms')
 
 # STFT параметры
 N_FFT = 2048
@@ -43,42 +38,6 @@ class SpectrogramParams:
     width: int = DEFAULT_WIDTH
     height: int = DEFAULT_HEIGHT
     color_map: str = DEFAULT_COLOR_MAP
-
-
-def get_cache_dir() -> Path:
-    """Возвращает директорию для кэширования спектрограмм."""
-    cache_dir_env = os.environ.get('SPECTROGRAM_CACHE_DIR')
-    if cache_dir_env:
-        return Path(cache_dir_env)
-    return DEFAULT_CACHE_DIR
-
-
-def ensure_cache_dir() -> Path:
-    """Убеждаемся, что кэш директория существует."""
-    cache_dir = get_cache_dir()
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    return cache_dir
-
-
-def build_cache_key(file_path: str, params: SpectrogramParams) -> str:
-    """Строит уникальный ключ для кэширования спектрограммы."""
-    parts = [
-        file_path,
-        f"{params.start_time:.3f}",
-        f"{params.end_time:.3f}" if params.end_time is not None else 'None',
-        str(params.width),
-        str(params.height),
-        params.color_map,
-    ]
-    joined = '|'.join(parts)
-    return hashlib.md5(joined.encode('utf-8')).hexdigest()
-
-
-def get_cache_path(file_path: str, params: SpectrogramParams) -> Path:
-    """Возвращает путь к кэш файлу."""
-    cache_dir = ensure_cache_dir()
-    cache_key = build_cache_key(file_path, params)
-    return cache_dir / f'{cache_key}.png'
 
 
 def validate_time_range(params: SpectrogramParams, audio_duration: float) -> None:
@@ -159,14 +118,6 @@ def generate_spectrogram_image(file_path: str, params: SpectrogramParams) -> byt
     return png_data
 
 
-def get_or_generate_spectrogram(file_path: str, params: SpectrogramParams) -> bytes:
-    """Возвращает спектрограмму из кэша или генерирует её."""
-    cache_path = get_cache_path(file_path, params)
-
-    if cache_path.exists():
-        return cache_path.read_bytes()
-
-    png_data = generate_spectrogram_image(file_path, params)
-
-    cache_path.write_bytes(png_data)
-    return png_data
+def generate_spectrogram(file_path: str, params: SpectrogramParams) -> bytes:
+    """Генерирует спектрограмму без использования кэша."""
+    return generate_spectrogram_image(file_path, params)

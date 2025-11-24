@@ -14,7 +14,7 @@ class GUID(TypeDecorator):
     """
     
     impl = CHAR
-    cache_ok = True
+    cache_ok = False
     
     def load_dialect_impl(self, dialect):
         """Выбор типа в зависимости от диалекта БД."""

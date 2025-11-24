@@ -132,15 +132,6 @@ def audio_file_not_in_db(context, audio_file_id):
     context['nonexistent_id'] = audio_file_id
 
 
-@given('кэш директория для спектрограмм существует')
-def spectrogram_cache_directory_exists(context, monkeypatch):
-    """Создаём кэш директорию и настраиваем переменную окружения."""
-    cache_dir = Path(tempfile.gettempdir()) / 'spectrogram_cache'
-    cache_dir.mkdir(exist_ok=True, parents=True)
-    context['spectrogram_cache_dir'] = cache_dir
-    monkeypatch.setenv('SPECTROGRAM_CACHE_DIR', str(cache_dir))
-
-
 @when(parsers.parse('я отправляю GET запрос на "{endpoint}"'))
 def send_get_request(context, endpoint, client):
     """Отправляем GET запрос и сохраняем ответ."""
@@ -192,30 +183,43 @@ def check_response_is_png(context):
         pytest.fail(f'Не удалось открыть изображение: {exc}')
 
 
-@then('файл спектрограммы должен быть сохранён в кэше')
-def check_spectrogram_cached(context):
-    """Проверяем наличие файла в кэш директории."""
-    cache_dir = context.get('spectrogram_cache_dir')
-    assert cache_dir is not None, 'Кэш директория не определена'
-    cache_files = list(cache_dir.glob('*.png'))
-    assert len(cache_files) > 0, 'Файл спектрограммы не найден в кэше'
-    context['cached_file'] = cache_files[0]
+@given('модуль spectrogram.py отвечает за генерацию спектрограммы')
+def spectrogram_module_loaded(context):
+    """Сохраняем путь к модулю spectrogram."""
+    context['spectrogram_module_path'] = Path(__file__).parent.parent / 'src' / 'audio' / 'spectrogram.py'
+    assert context['spectrogram_module_path'].exists(), 'spectrogram.py не найден'
 
 
-@then('при повторном запросе спектрограмма должна использовать кэш')
-def check_cache_used(context, client):
-    """Делаем повторный запрос и убеждаемся что кэш не изменился."""
-    cached_file = context.get('cached_file')
-    assert cached_file is not None and cached_file.exists(), 'Нет кэшированного файла'
+@when('я проверяю реализацию генерации спектрограммы')
+def inspect_spectrogram_module(context):
+    """Читаем содержимое spectrogram.py."""
+    content = context['spectrogram_module_path'].read_text(encoding='utf-8')
+    context['spectrogram_module_content'] = content
 
-    original_mtime = cached_file.stat().st_mtime
-    endpoint = f"/api/audio/{context['audio_file_id']}/spectrogram?start_time=0.5&end_time=2.5"
 
-    response = client.get(endpoint)
-    context['response'] = response
+@then('код не должен ссылаться на директории кэша')
+def ensure_spectrogram_has_no_cache_dirs(context):
+    """Убеждаемся что модуль не содержит кэширующей логики."""
+    content = context['spectrogram_module_content']
+    forbidden_tokens = [
+        'cache_dir',
+        'SPECTROGRAM_CACHE_DIR',
+        'DEFAULT_CACHE_DIR',
+        'get_cache_path',
+        'ensure_cache_dir'
+    ]
+    lowered = content.lower()
+    for token in forbidden_tokens:
+        assert token.lower() not in lowered, f'В spectrogram.py не должно быть "{token}"'
 
-    new_mtime = cached_file.stat().st_mtime
-    assert new_mtime == original_mtime, 'Кэш не использовался, файл был перезаписан'
+
+@then('спектрограмма не должна записываться на диск')
+def ensure_spectrogram_not_saved(context):
+    """Проверяем что изображение не кэшируется."""
+    content = context['spectrogram_module_content']
+    forbidden_patterns = ['write_bytes', 'open(', '.write(']
+    for pattern in forbidden_patterns:
+        assert pattern not in content, f'В spectrogram.py не должно быть "{pattern}"'
 
 
 @then('ответ должен содержать JSON с полем "error"')

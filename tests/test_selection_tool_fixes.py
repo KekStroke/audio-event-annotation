@@ -8,6 +8,8 @@ from pytest_bdd import scenarios, given, when, then, parsers
 # Загружаем сценарии из feature-файла
 scenarios('features/selection_tool_fixes.feature')
 
+test_context = {}
+
 @given('selection-tool.js contains clearSelection function')
 def selection_tool_has_clear_selection():
     """Проверяем что файл существует и содержит функцию"""
@@ -268,70 +270,56 @@ def check_sets_selection_tool_id():
         'ensureAudioFileId должна устанавливать selectionToolCurrentAudioFileId'
 
 
-@given('audio-player.js contains cacheWaveSurferPlugins function')
-def audio_player_has_cache():
-    """Проверяем что файл содержит функцию cacheWaveSurferPlugins"""
+@given('audio-player.js не содержит функций кэширования')
+def audio_player_has_no_cache():
+    """Проверяем что файл не содержит кэширующей логики."""
     audio_player_path = Path(__file__).parent.parent / 'static' / 'js' / 'audio-player.js'
     content = audio_player_path.read_text(encoding='utf-8')
-    assert 'function cacheWaveSurferPlugins()' in content
+    test_context.clear()
+    test_context['audio_player_content'] = content
+    assert 'cacheWaveSurferPlugins' not in content, 'cacheWaveSurferPlugins должна быть удалена'
+    assert 'window.waveSurferRegionsPlugin' not in content, 'Не должно быть window.waveSurferRegionsPlugin'
 
-@when('I check logging')
-def check_logging():
-    """Подготовка к проверке логов"""
-    pass
 
-@then('there should be NO logs "[cacheWaveSurferPlugins] 🔍 Плагин"')
-def check_no_plugin_logs():
-    """
-    FAILING TEST: Проверяем что нет debug логов для плагинов
-    """
-    audio_player_path = Path(__file__).parent.parent / 'static' / 'js' / 'audio-player.js'
-    content = audio_player_path.read_text(encoding='utf-8')
-    
-    func_match = re.search(
-        r'function cacheWaveSurferPlugins\(\).*?\n\}',
-        content,
-        re.DOTALL
-    )
-    assert func_match
-    func_body = func_match.group(0)
-    
-    # FAILING TEST: не должно быть детальных логов о плагинах
-    assert '[cacheWaveSurferPlugins] 🔍 Плагин [' not in func_body, \
-        'Debug логи "[cacheWaveSurferPlugins] 🔍 Плагин" должны быть удалены'
+@when('я проверяю реализацию getWaveSurferRegionsPlugin')
+def inspect_get_regions():
+    """Сохраняем тело функции getWaveSurferRegionsPlugin."""
+    content = test_context.get('audio_player_content')
+    if content is None:
+        audio_player_path = Path(__file__).parent.parent / 'static' / 'js' / 'audio-player.js'
+        content = audio_player_path.read_text(encoding='utf-8')
+        test_context['audio_player_content'] = content
+    marker = 'function getWaveSurferRegionsPlugin()'
+    assert marker in content, 'Функция getWaveSurferRegionsPlugin должна существовать'
+    start = content.index(marker)
+    brace_count = 0
+    body_chars = []
+    started = False
+    for char in content[start:]:
+        body_chars.append(char)
+        if char == '{':
+            brace_count += 1
+            started = True
+        elif char == '}':
+            if started:
+                brace_count -= 1
+                if brace_count == 0:
+                    break
+    body = ''.join(body_chars)
+    test_context['get_regions_body'] = body
 
-@then('there should be NO logs "constructor.name"')
-def check_no_constructor_logs():
-    """Проверяем что нет логов constructor.name"""
-    audio_player_path = Path(__file__).parent.parent / 'static' / 'js' / 'audio-player.js'
-    content = audio_player_path.read_text(encoding='utf-8')
-    
-    func_match = re.search(
-        r'function cacheWaveSurferPlugins\(\).*?\n\}',
-        content,
-        re.DOTALL
-    )
-    assert func_match
-    func_body = func_match.group(0)
-    
-    assert 'constructor.name' not in func_body, \
-        'Debug логи "constructor.name" должны быть удалены'
 
-@then('only success cache log should remain')
-def check_has_success_log():
-    """Проверяем что остался лог успешного кэширования"""
-    audio_player_path = Path(__file__).parent.parent / 'static' / 'js' / 'audio-player.js'
-    content = audio_player_path.read_text(encoding='utf-8')
-    
-    func_match = re.search(
-        r'function cacheWaveSurferPlugins\(\).*?\n\}',
-        content,
-        re.DOTALL
-    )
-    assert func_match
-    func_body = func_match.group(0)
-    
-    # Должен быть только финальный лог
-    assert 'Закэширован regions plugin' in func_body or 'regions plugin' in func_body, \
-        'Должен остаться лог о результате кэширования'
+@then('функция должна использовать wavesurfer.getActivePlugins()')
+def ensure_uses_get_active():
+    """Проверяем что функция обращается к wavesurfer.getActivePlugins()."""
+    body = test_context.get('get_regions_body', '')
+    assert 'getActivePlugins' in body, 'Должен быть вызов wavesurfer.getActivePlugins()'
+
+
+@then('код не должен обращаться к window.waveSurferRegionsPlugin')
+def ensure_no_window_reference():
+    """Проверяем отсутствие ссылок на window.waveSurferRegionsPlugin."""
+    content = test_context.get('audio_player_content', '')
+    assert 'window.waveSurferRegionsPlugin' not in content, \
+        'Не должно быть обращений к window.waveSurferRegionsPlugin'
 

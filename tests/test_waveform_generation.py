@@ -122,17 +122,6 @@ def audio_file_not_in_db(context, audio_file_id):
     context['nonexistent_id'] = audio_file_id
 
 
-@given('кэш директория существует')
-def cache_directory_exists(context, monkeypatch):
-    """Создаём кэш директорию."""
-    cache_dir = Path(tempfile.gettempdir()) / "waveform_cache"
-    cache_dir.mkdir(exist_ok=True, parents=True)
-    context['cache_dir'] = cache_dir
-    # Устанавливаем переменную окружения для использования в коде
-    import os
-    monkeypatch.setenv('WAVEFORM_CACHE_DIR', str(cache_dir))
-
-
 @given(parsers.parse('размер файла больше {size:d}MB'))
 def file_size_greater_than(context, size):
     """Создаём файл больше указанного размера."""
@@ -220,36 +209,43 @@ def check_image_size(context):
     assert len(data) > 0, "Размер изображения равен 0"
 
 
-@then('файл waveform должен быть сохранён в кэше')
-def check_waveform_cached(context):
-    """Проверяем что waveform сохранён в кэше."""
-    # Проверяем что файл создан в кэше
-    cache_dir = context.get('cache_dir')
-    if cache_dir:
-        # Ищем файлы в кэше
-        cache_files = list(cache_dir.glob('*.png'))
-        assert len(cache_files) > 0, "Файл waveform не найден в кэше"
-        context['cached_file'] = cache_files[0]
+@given('модуль waveform.py отвечает за генерацию waveform')
+def waveform_module_loaded(context):
+    """Сохраняем путь к модулю waveform."""
+    context['waveform_module_path'] = Path(__file__).parent.parent / 'src' / 'audio' / 'waveform.py'
+    assert context['waveform_module_path'].exists(), 'waveform.py не найден'
 
 
-@then('при повторном запросе должен использоваться кэш')
-def check_cache_used(context, client):
-    """Проверяем использование кэша при повторном запросе."""
-    audio_file_id = context['audio_file_id']
-    endpoint = f"/api/audio/{audio_file_id}/waveform"
-    
-    # Получаем время модификации кэш файла
-    cached_file = context.get('cached_file')
-    if cached_file and cached_file.exists():
-        original_mtime = cached_file.stat().st_mtime
-        
-        # Делаем повторный запрос
-        response = client.get(endpoint)
-        context['response'] = response
-        
-        # Проверяем что файл не изменился (использовался кэш)
-        new_mtime = cached_file.stat().st_mtime
-        assert new_mtime == original_mtime, "Кэш не использовался, файл был пересоздан"
+@when('я проверяю реализацию генерации waveform')
+def inspect_waveform_module(context):
+    """Читаем содержимое waveform.py."""
+    content = context['waveform_module_path'].read_text(encoding='utf-8')
+    context['waveform_module_content'] = content
+
+
+@then('код не должен использовать директории кэша')
+def ensure_waveform_has_no_cache_dirs(context):
+    """Убеждаемся что модуль не содержит кэширующей логики."""
+    content = context['waveform_module_content']
+    forbidden_tokens = [
+        'cache_dir',
+        'DEFAULT_CACHE_DIR',
+        'WAVEFORM_CACHE_DIR',
+        'get_cache_path',
+        'ensure_cache_dir'
+    ]
+    lowered = content.lower()
+    for token in forbidden_tokens:
+        assert token.lower() not in lowered, f'В waveform.py не должно быть "{token}"'
+
+
+@then('waveform не должен сохраняться на диск для последующего использования')
+def ensure_waveform_not_saved(context):
+    """Проверяем что генерация не пишет файлы на диск."""
+    content = context['waveform_module_content']
+    forbidden_patterns = ['write_bytes', 'open(', '.write(']
+    for pattern in forbidden_patterns:
+        assert pattern not in content, f'В waveform.py не должно быть "{pattern}"'
 
 
 @then('ответ должен содержать JSON с полем "error"')

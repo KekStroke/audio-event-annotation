@@ -21,7 +21,7 @@ Feature: Regions Plugin инициализация и готовность
     When я открываю главную страницу "/"
     Then regions plugin должен быть доступен после загрузки аудио
     And функция getWaveSurferRegionsPlugin должна возвращать plugin
-    And cacheWaveSurferPlugins НЕ должна вызываться синхронно после WaveSurfer.create
+    And получение plugin не должно зависеть от кэширования
 
   Scenario: Событие wavesurferRegionsReady срабатывает вовремя
     When я открываю главную страницу "/"

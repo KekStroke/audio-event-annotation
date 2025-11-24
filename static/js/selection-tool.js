@@ -22,7 +22,7 @@ function getSelectionRegionsPlugin() {
     if (typeof window.getWaveSurferRegionsPlugin === 'function') {
         return window.getWaveSurferRegionsPlugin();
     }
-    return window.waveSurferRegionsPlugin || null;
+    return null;
 }
 
 // Подписываемся на выбор аудио файла

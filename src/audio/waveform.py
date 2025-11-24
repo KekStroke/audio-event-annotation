@@ -5,11 +5,7 @@
 - Настраиваемых размеров (width, height)
 - Настраиваемого цвета
 - Downsampling для больших файлов
-- Кэширования на диске
 """
-import os
-import hashlib
-from pathlib import Path
 from typing import Optional, Tuple
 import numpy as np
 import soundfile as sf
@@ -24,45 +20,7 @@ import io
 DEFAULT_WIDTH = 1200
 DEFAULT_HEIGHT = 300
 DEFAULT_COLOR = '#1f77b4'  # Синий цвет matplotlib
-DEFAULT_CACHE_DIR = Path('cache/waveforms')
 MAX_SAMPLES_PER_PIXEL = 1000  # Для downsampling
-
-
-def get_cache_dir() -> Path:
-    """Получает путь к кэш директории из переменной окружения или использует дефолтный."""
-    cache_dir_env = os.environ.get('WAVEFORM_CACHE_DIR')
-    if cache_dir_env:
-        return Path(cache_dir_env)
-    return DEFAULT_CACHE_DIR
-
-
-def ensure_cache_dir():
-    """Создаёт кэш директорию если её нет."""
-    cache_dir = get_cache_dir()
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    return cache_dir
-
-
-def get_cache_path(audio_file_path: str, width: int, height: int, color: str) -> Path:
-    """
-    Генерирует путь к кэш файлу waveform.
-    
-    Args:
-        audio_file_path: Путь к аудио-файлу
-        width: Ширина изображения
-        height: Высота изображения
-        color: Цвет waveform
-    
-    Returns:
-        Path к кэш файлу
-    """
-    cache_dir = ensure_cache_dir()
-    
-    # Создаём уникальный ключ на основе параметров
-    cache_key = f"{audio_file_path}_{width}_{height}_{color}"
-    cache_hash = hashlib.md5(cache_key.encode()).hexdigest()
-    
-    return cache_dir / f"{cache_hash}.png"
 
 
 def load_audio_samples(file_path: str, max_samples: Optional[int] = None) -> Tuple[np.ndarray, int]:
@@ -184,44 +142,24 @@ def generate_waveform_image(
     return png_data
 
 
-def get_or_generate_waveform(
+def generate_waveform(
     audio_file_path: str,
     width: int = DEFAULT_WIDTH,
     height: int = DEFAULT_HEIGHT,
     color: str = DEFAULT_COLOR
 ) -> bytes:
     """
-    Получает waveform из кэша или генерирует новый.
+    Генерирует waveform без использования кэша.
     
     Args:
         audio_file_path: Путь к аудио-файлу
         width: Ширина изображения
         height: Высота изображения
-        color: Цвет waveform
+        color: Цвет waveform в hex формате (можно без символа #)
     
     Returns:
         PNG изображение в виде bytes
     """
-    # Нормализуем цвет (убираем # если есть)
-    if color.startswith('#'):
-        color = color[1:]
-    color = f"#{color}"  # Добавляем обратно для консистентности
-    
-    # Проверяем кэш
-    cache_path = get_cache_path(audio_file_path, width, height, color)
-    
-    if cache_path.exists():
-        # Читаем из кэша
-        with open(cache_path, 'rb') as f:
-            return f.read()
-    
-    # Генерируем новый waveform
-    png_data = generate_waveform_image(audio_file_path, width, height, color)
-    
-    # Сохраняем в кэш
-    cache_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(cache_path, 'wb') as f:
-        f.write(png_data)
-    
-    return png_data
+    normalized_color = color if color.startswith('#') else f"#{color}"
+    return generate_waveform_image(audio_file_path, width, height, normalized_color)
 

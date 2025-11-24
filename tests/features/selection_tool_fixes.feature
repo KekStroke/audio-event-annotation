@@ -30,10 +30,9 @@ Feature: Selection Tool fixes
     Then it should check window.currentAudioFileId
     And set selectionToolCurrentAudioFileId from global variable
 
-  Scenario: Debug logs removed from audio-player.js
-    Given audio-player.js contains cacheWaveSurferPlugins function
-    When I check logging
-    Then there should be NO logs "[cacheWaveSurferPlugins] 🔍 Плагин"
-    And there should be NO logs "constructor.name"
-    And only success cache log should remain
+  Scenario: Audio player получает regions plugin без кэширования
+    Given audio-player.js не содержит функций кэширования
+    When я проверяю реализацию getWaveSurferRegionsPlugin
+    Then функция должна использовать wavesurfer.getActivePlugins()
+    And код не должен обращаться к window.waveSurferRegionsPlugin
 

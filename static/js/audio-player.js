@@ -15,7 +15,6 @@ let wavesurfer = null;
 let currentZoom = 0;
 let currentlyLoadingAudioId = null;
 let lastLoadedAudioId = null;
-let waveSurferRegionsPlugin = null;
 
 /**
  * Поиск доступного плагина wavesurfer независимо от пространства имён.
@@ -136,52 +135,29 @@ function notifyRegionsPluginReady() {
 /**
  * Кэширование активных плагинов WaveSurfer.
  */
-function cacheWaveSurferPlugins() {
-  if (!wavesurfer || typeof wavesurfer.getActivePlugins !== "function") {
-    waveSurferRegionsPlugin = null;
-    window.waveSurferRegionsPlugin = null;
-    return;
-  }
-
-  const active = wavesurfer.getActivePlugins();
-  
-  // Если это массив, ищем regions plugin по характерным методам
-  if (Array.isArray(active)) {
-    const regionsPlugin = active.find(p => 
-      p && (
-        p.constructor?.name === 'RegionsPlugin' ||
-        p.constructor?.name === 'Regions' ||
-        typeof p.addRegion === 'function' ||
-        typeof p.enableDragSelection === 'function'
-      )
-    );
-    
-    waveSurferRegionsPlugin = regionsPlugin || null;
-  } else {
-    // Если это объект (старый формат)
-    waveSurferRegionsPlugin = (active && active.regions) || null;
-  }
-  
-  window.waveSurferRegionsPlugin = waveSurferRegionsPlugin;
-  notifyRegionsPluginReady();
-}
-
 /**
  * Получение экземпляра плагина regions.
  */
 function getWaveSurferRegionsPlugin() {
-  if (waveSurferRegionsPlugin) {
-    return waveSurferRegionsPlugin;
+  if (!wavesurfer || typeof wavesurfer.getActivePlugins !== "function") {
+    return null;
   }
 
-  if (wavesurfer && typeof wavesurfer.getActivePlugins === "function") {
-    const active = wavesurfer.getActivePlugins();
-    waveSurferRegionsPlugin = (active && active.regions) || null;
-    window.waveSurferRegionsPlugin = waveSurferRegionsPlugin;
-    return waveSurferRegionsPlugin;
+  const active = wavesurfer.getActivePlugins();
+
+  if (Array.isArray(active)) {
+    return active.find((plugin) => {
+      if (!plugin) return false;
+      return (
+        plugin.constructor?.name === "RegionsPlugin" ||
+        plugin.constructor?.name === "Regions" ||
+        typeof plugin.addRegion === "function" ||
+        typeof plugin.enableDragSelection === "function"
+      );
+    }) || null;
   }
 
-  return null;
+  return (active && active.regions) || null;
 }
 
 window.getWaveSurferRegionsPlugin = getWaveSurferRegionsPlugin;
@@ -216,8 +192,6 @@ function initWaveSurfer(audioUrl) {
 
   currentlyLoadingAudioId = null;
   lastLoadedAudioId = null;
-  waveSurferRegionsPlugin = null;
-  window.waveSurferRegionsPlugin = null;
   isAdjustingRegion = false;
 
   // Создаём новый instance wavesurfer
@@ -238,10 +212,6 @@ function initWaveSurfer(audioUrl) {
     plugins: buildWaveSurferPlugins(),
   });
 
-  // НЕ вызываем cacheWaveSurferPlugins() здесь!
-  // Плагины еще не готовы после WaveSurfer.create()
-  // Они станут доступны только в обработчике 'ready'
-  
   notifyWavesurferReady();
 
   // Загружаем аудио файл
@@ -285,7 +255,7 @@ function setupAudioEventHandlers() {
 
   // Событие ready (аудио загружено)
   wavesurfer.on("ready", () => {
-    cacheWaveSurferPlugins();
+    notifyRegionsPluginReady();
     updateTimeDisplay();
     hideLoadingIndicator();
     setupRegionOverlapPrevention();
@@ -293,7 +263,7 @@ function setupAudioEventHandlers() {
   
   // Событие decode (альтернативное для Web Audio API backend)
   wavesurfer.on("decode", () => {
-    cacheWaveSurferPlugins();
+    notifyRegionsPluginReady();
     setupRegionOverlapPrevention();
   });
 
@@ -610,8 +580,8 @@ function loadAudioFile(audioFileId) {
         currentlyLoadingAudioId = null;
         hideLoadingIndicator();
         
-        // Кэшируем плагины после загрузки
-        cacheWaveSurferPlugins();
+        // Уведомляем слушателей что плагин готов
+        notifyRegionsPluginReady();
         
         // Настраиваем предотвращение наложения регионов
         setupRegionOverlapPrevention();

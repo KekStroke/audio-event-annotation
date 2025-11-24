@@ -241,48 +241,17 @@ def check_enable_drag_selection_called():
 @then('после вызова ensureWaveSurferInitialized regions plugin должен быть сразу доступен')
 def check_regions_available_after_init():
     """
-    FAILING TEST: Проверяем что regions plugin доступен СРАЗУ после инициализации.
-    
-    Проблема: WaveSurfer инициализируется синхронно, но regions plugin может быть доступен 
-    только после события 'ready', которое асинхронно. Это ломает drag selection.
+    Проверяем что regions plugin определяется без кэширования.
     """
     from pathlib import Path
     audio_player_path = Path(__file__).parent.parent / 'static' / 'js' / 'audio-player.js'
     content = audio_player_path.read_text(encoding='utf-8')
     
-    # Проверяем что cacheWaveSurferPlugins вызывается СРАЗУ после создания WaveSurfer
-    # а не только в обработчике 'ready'
-    lines = content.split('\n')
-    
-    found_init_function = False
-    found_create = False
-    found_cache_after_create = False
-    line_after_create = None
-    
-    for i, line in enumerate(lines):
-        if 'function initWaveSurfer' in line:
-            found_init_function = True
-        
-        if found_init_function and 'WaveSurfer.create({' in line:
-            found_create = True
-            # Ищем закрывающую скобку создания
-            for j in range(i + 1, min(i + 30, len(lines))):
-                if '});' in lines[j] and 'WaveSurfer.create' not in lines[j]:
-                    line_after_create = j
-                    break
-            continue
-        
-        if line_after_create and i > line_after_create and i < line_after_create + 5:
-            if 'cacheWaveSurferPlugins()' in line:
-                found_cache_after_create = True
-                break
-    
-    assert found_init_function, 'Функция initWaveSurfer не найдена'
-    assert found_create, 'WaveSurfer.create не найден'
-    assert found_cache_after_create, \
-        'FAILING: cacheWaveSurferPlugins() НЕ вызывается сразу после WaveSurfer.create(). ' \
-        'Regions plugin будет доступен только асинхронно после события ready, ' \
-        'что ломает drag selection при первом выборе файла!'
+    assert 'cacheWaveSurferPlugins' not in content, 'Не должно быть кэширующих функций'
+    assert 'function getWaveSurferRegionsPlugin' in content, \
+        'Ожидается функция getWaveSurferRegionsPlugin'
+    assert 'getActivePlugins' in content, \
+        'getWaveSurferRegionsPlugin должна использовать wavesurfer.getActivePlugins() для получения актуального plugin'
 
 
 @then('getWaveSurferRegionsPlugin должна возвращать непустой объект')

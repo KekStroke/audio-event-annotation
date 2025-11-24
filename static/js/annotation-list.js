@@ -20,7 +20,7 @@ function getAnnotationRegionsPlugin() {
     if (typeof window.getWaveSurferRegionsPlugin === 'function') {
         return window.getWaveSurferRegionsPlugin();
     }
-    return window.waveSurferRegionsPlugin || null;
+    return null;
 }
 
 /**

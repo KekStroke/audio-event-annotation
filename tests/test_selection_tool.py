@@ -310,7 +310,7 @@ def check_selection_tool_regions_guard():
     assert script_path.exists(), 'Файл selection-tool.js не найден'
 
     content = script_path.read_text(encoding='utf-8')
-    assert 'getWaveSurferRegionsPlugin' in content or 'waveSurferRegionsPlugin' in content, (
+    assert 'getWaveSurferRegionsPlugin' in content, (
         'selection-tool.js должен получать доступ к regions-плагину через вспомогательную функцию'
     )
 
