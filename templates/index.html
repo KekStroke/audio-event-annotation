@@ -53,8 +53,15 @@
                 <div class="workspace-header">
                     <h2 class="workspace-title">Visualization Area</h2>
                     <div class="workspace-controls">
-                        <button type="button" class="control-btn" id="zoom-in" data-action="zoom-in" tabindex="9">Zoom In</button>
-                        <button type="button" class="control-btn" id="zoom-out" data-action="zoom-out" tabindex="10">Zoom Out</button>
+                        <div class="zoom-controls-group">
+                            <button type="button" class="control-btn" id="zoom-in" data-action="zoom-in" tabindex="9" title="Zoom In x2">Zoom In x2</button>
+                            <button type="button" class="control-btn" id="zoom-out" data-action="zoom-out" tabindex="10" title="Zoom Out x2">Zoom Out x2</button>
+                            <div class="zoom-duration-control">
+                                <input type="number" id="zoom-duration-input" class="zoom-duration-input" min="1" max="3600" step="1" placeholder="60" title="Zoom to duration (seconds)">
+                                <button type="button" class="control-btn" id="zoom-to-duration-btn" data-action="zoom-to-duration" tabindex="11" title="Zoom to show specified duration">Zoom</button>
+                            </div>
+                            <span id="current-zoom-display" class="current-zoom-display" title="Current visible duration"></span>
+                        </div>
                         <button type="button" class="control-btn" id="export-annotations" data-action="export" tabindex="15">Export</button>
                     </div>
                 </div>

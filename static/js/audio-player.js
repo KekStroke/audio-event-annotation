@@ -257,6 +257,7 @@ function setupAudioEventHandlers() {
   wavesurfer.on("ready", () => {
     notifyRegionsPluginReady();
     updateTimeDisplay();
+    updateZoomDisplay();
     hideLoadingIndicator();
     setupRegionOverlapPrevention();
   });
@@ -609,23 +610,151 @@ function loadAudioFile(audioFileId) {
 }
 
 /**
- * Zoom In
+ * Zoom In x2
  */
 function zoomIn() {
   if (!wavesurfer) return;
 
-  currentZoom = Math.min(currentZoom + 50, 2000);
+  if (currentZoom === 0) {
+    // Если zoom=0 (весь файл), начинаем с разумного значения
+    currentZoom = 50;
+  } else {
+    // Увеличиваем в 2 раза
+    currentZoom = Math.min(currentZoom * 2, 20000);
+  }
   wavesurfer.zoom(currentZoom);
+  updateZoomDisplay();
 }
 
 /**
- * Zoom Out
+ * Zoom Out x2
  */
 function zoomOut() {
   if (!wavesurfer) return;
 
-  currentZoom = Math.max(currentZoom - 50, 0);
+  // Уменьшаем в 2 раза
+  currentZoom = currentZoom / 2;
+  // При малых значениях (<10) сбрасываем в 0
+  if (currentZoom < 10) {
+    currentZoom = 0;
+  }
   wavesurfer.zoom(currentZoom);
+  updateZoomDisplay();
+}
+
+/**
+ * Zoom to Duration - масштабирование чтобы показать заданную длительность
+ */
+function zoomToDuration(durationSeconds) {
+  if (!wavesurfer) return;
+
+  // Валидация
+  const duration = parseFloat(durationSeconds);
+  if (isNaN(duration) || duration <= 0) {
+    showZoomError('Длительность должна быть положительным числом');
+    return;
+  }
+
+  if (duration > 3600) {
+    showZoomError('Длительность не может превышать 3600 секунд (1 час)');
+    return;
+  }
+
+  // Получаем ширину контейнера waveform
+  const waveformContainer = document.getElementById('waveform');
+  if (!waveformContainer) return;
+
+  const containerWidth = waveformContainer.offsetWidth;
+  
+  // Вычисляем zoom: пиксели/сек = ширина_контейнера / длительность
+  currentZoom = containerWidth / duration;
+  
+  wavesurfer.zoom(currentZoom);
+  updateZoomDisplay();
+  clearZoomError();
+}
+
+/**
+ * Обновление отображения текущего масштаба
+ */
+function updateZoomDisplay() {
+  const displayElement = document.getElementById('current-zoom-display');
+  if (!displayElement || !wavesurfer) return;
+
+  const waveformContainer = document.getElementById('waveform');
+  if (!waveformContainer) return;
+
+  const containerWidth = waveformContainer.offsetWidth;
+  let visibleDuration;
+
+  if (currentZoom === 0) {
+    // При zoom=0 видна вся длительность
+    visibleDuration = wavesurfer.getDuration();
+  } else {
+    // При zoom>0: видимая_длительность = ширина_контейнера / zoom
+    visibleDuration = containerWidth / currentZoom;
+  }
+
+  // Форматируем время
+  displayElement.textContent = formatDuration(visibleDuration);
+}
+
+/**
+ * Форматирование длительности в читаемый вид
+ */
+function formatDuration(seconds) {
+  if (!seconds || isNaN(seconds)) return '0s';
+
+  if (seconds < 60) {
+    return `${Math.round(seconds)}s`;
+  } else if (seconds < 3600) {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  } else {
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
+}
+
+/**
+ * Показать сообщение об ошибке zoom
+ */
+function showZoomError(message) {
+  // Создаем или обновляем элемент ошибки
+  let errorElement = document.querySelector('.zoom-error-message');
+  if (!errorElement) {
+    errorElement = document.createElement('div');
+    errorElement.className = 'error-message zoom-error-message';
+    errorElement.style.cssText = 'position: absolute; top: 50px; left: 50%; transform: translateX(-50%); z-index: 1000; padding: 0.75rem 1rem; background-color: #ff4444; color: white; border-radius: 4px;';
+    
+    const workspaceHeader = document.querySelector('.workspace-header');
+    if (workspaceHeader) {
+      workspaceHeader.appendChild(errorElement);
+    }
+  }
+  
+  errorElement.textContent = message;
+  errorElement.style.display = 'block';
+  
+  // Автоматически скрыть через 3 секунды
+  setTimeout(() => {
+    if (errorElement) {
+      errorElement.style.display = 'none';
+    }
+  }, 3000);
+}
+
+/**
+ * Очистить сообщение об ошибке zoom
+ */
+function clearZoomError() {
+  const errorElement = document.querySelector('.zoom-error-message');
+  if (errorElement) {
+    errorElement.style.display = 'none';
+  }
 }
 
 /**
@@ -773,6 +902,31 @@ document.addEventListener("DOMContentLoaded", () => {
     zoomOutBtn.addEventListener("click", () => {
       ensureWaveSurferInitialized();
       zoomOut();
+    });
+  }
+
+  // Обработчик для кнопки Zoom to Duration
+  const zoomToDurationBtn = document.getElementById("zoom-to-duration-btn");
+  const zoomDurationInput = document.getElementById("zoom-duration-input");
+
+  if (zoomToDurationBtn && zoomDurationInput) {
+    zoomToDurationBtn.addEventListener("click", () => {
+      ensureWaveSurferInitialized();
+      const duration = zoomDurationInput.value;
+      if (duration) {
+        zoomToDuration(duration);
+      }
+    });
+
+    // Обработчик Enter в поле ввода
+    zoomDurationInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        ensureWaveSurferInitialized();
+        const duration = zoomDurationInput.value;
+        if (duration) {
+          zoomToDuration(duration);
+        }
+      }
     });
   }
 });

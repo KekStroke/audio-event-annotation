@@ -284,6 +284,52 @@ body {
 .workspace-controls {
     display: flex;
     gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.zoom-controls-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    padding: 0.25rem 0.5rem;
+    background-color: var(--bg-tertiary);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+.zoom-duration-control {
+    display: flex;
+    gap: 0.25rem;
+    align-items: center;
+}
+
+.zoom-duration-input {
+    width: 70px;
+    padding: 0.4rem 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.zoom-duration-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.current-zoom-display {
+    padding: 0.4rem 0.75rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    min-width: 60px;
+    text-align: center;
 }
 
 .workspace-content {
