@@ -187,6 +187,51 @@ def check_minimum_size_removal():
         f'Обработчик не удаляет регион если он меньше минимального размера (size_check={has_size_check}, removal={has_removal})'
 
 
+@given('audio-player.js содержит функцию adjustRegionBounds')
+def read_audio_player_for_adjustment():
+    """Читаем файл audio-player.js для проверки adjustRegionBounds"""
+    audio_player_path = Path(__file__).parent.parent / 'static' / 'js' / 'audio-player.js'
+    content = audio_player_path.read_text(encoding='utf-8')
+    assert 'function adjustRegionBounds' in content, 'Функция adjustRegionBounds не найдена'
+    test_data['audio_player_content'] = content
+
+
+@when('я проверяю минимальный размер региона')
+def extract_min_region_size():
+    """Находим значение MIN_REGION_SIZE"""
+    content = test_data['audio_player_content']
+    pattern = r'MIN_REGION_SIZE\s*=\s*([0-9.]+)'
+    match = re.search(pattern, content)
+    assert match, 'MIN_REGION_SIZE не найден'
+    test_data['min_region_size'] = float(match.group(1))
+
+
+@then('минимальный размер региона должен быть 1 секунда')
+def check_min_region_size():
+    """Проверяем что минимальный размер равен 1 секунде"""
+    min_size = test_data.get('min_region_size')
+    assert min_size is not None, 'MIN_REGION_SIZE не был найден'
+    assert abs(min_size - 1.0) < 1e-6, f'Ожидалось 1.0, получено {min_size}'
+
+
+@when('границы региона скорректированы и размер меньше минимума')
+def detect_min_size_removal_logic():
+    """Проверяем, что при недостаточном размере регион удаляется"""
+    content = test_data['audio_player_content']
+    pattern = r'if\s*\(\s*(?:adjustedEnd\s*-\s*adjustedStart|adjustedDuration)\s*<\s*MIN_REGION_SIZE'
+    match = re.search(pattern, content)
+    assert match, 'Не найдена проверка на минимальный размер после коррекции'
+    test_data['min_size_condition_found'] = True
+
+
+@then('регион должен быть удален')
+def ensure_region_removed_on_small_size():
+    """Проверяем, что маленький регион удаляется"""
+    assert test_data.get('min_size_condition_found'), 'Условие минимального размера не найдено'
+    content = test_data['audio_player_content']
+    assert '.remove()' in content, 'Удаление региона (.remove()) не найдено'
+
+
 @given('существует обработчик события region-updated')
 def check_region_updated_handler():
     """Проверяем наличие обработчика region-updated"""
@@ -229,4 +274,42 @@ def check_recursion_prevention():
     
     assert has_flag and has_check, \
         f'Нет защиты от рекурсии (has_flag={has_flag}, has_check={has_check})'
+
+
+@given('annotation-list.js содержит конфигурацию регионов')
+def read_annotation_config():
+    """Читаем файл annotation-list.js"""
+    annotation_list_path = Path(__file__).parent.parent / 'static' / 'js' / 'annotation-list.js'
+    content = annotation_list_path.read_text(encoding='utf-8')
+    test_data['annotation_list_content'] = content
+
+
+@when('я создаю регион для аннотации')
+def extract_annotation_region_config():
+    """Находим конфигурацию addRegion для аннотаций"""
+    content = test_data['annotation_list_content']
+    pattern = r'regionsPlugin\.addRegion\(\s*\{([^}]+)\}\s*\)'
+    matches = re.findall(pattern, content, re.DOTALL)
+    assert matches, 'Конфигурация regionsPlugin.addRegion не найдена'
+    annotation_configs = []
+    for block in matches:
+        if 'getAnnotationColor' in block:
+            drag_match = re.search(r'drag\s*:\s*(true|false)', block)
+            resize_match = re.search(r'resize\s*:\s*(true|false)', block)
+            annotation_configs.append({
+                'drag': drag_match.group(1) if drag_match else None,
+                'resize': resize_match.group(1) if resize_match else None
+            })
+    assert annotation_configs, 'Не найдены конфигурации регионов для аннотаций'
+    test_data['annotation_region_configs'] = annotation_configs
+
+
+@then('регион должен быть недоступен для drag и resize')
+def ensure_annotation_region_not_editable():
+    """Проверяем что регионы аннотаций не редактируемы"""
+    configs = test_data.get('annotation_region_configs', [])
+    assert configs, 'Конфигурации регионов аннотаций не найдены'
+    for config in configs:
+        assert config['drag'] == 'false', f"Ожидалось drag: false, получено {config['drag']}"
+        assert config['resize'] == 'false', f"Ожидалось resize: false, получено {config['resize']}"
 

@@ -390,34 +390,70 @@ function adjustRegionBounds(region) {
     return true;
   }
 
+  const audioDuration =
+    wavesurfer && typeof wavesurfer.getDuration === 'function'
+      ? wavesurfer.getDuration()
+      : Number.POSITIVE_INFINITY;
+
   // Получаем все существующие регионы кроме текущего
   const allRegions = regionsPlugin.getRegions ? regionsPlugin.getRegions() : [];
-  const existingRegions = allRegions.filter(r => r.id !== region.id);
+  const existingRegions = allRegions.filter((r) => r.id !== region.id);
+  const sortedRegions = existingRegions.slice().sort((a, b) => a.start - b.start);
 
   let adjustedStart = region.start;
   let adjustedEnd = region.end;
 
   // Проверяем пересечения со всеми существующими регионами
-  for (const existingRegion of existingRegions) {
+  for (const existingRegion of sortedRegions) {
     if (checkRegionOverlap(adjustedStart, adjustedEnd, existingRegion.start, existingRegion.end)) {
       // Есть пересечение - корректируем границы
-      
-      // Если новый регион начинается раньше
       if (adjustedStart < existingRegion.start) {
         // Обрезаем конец до начала существующего
         adjustedEnd = Math.min(adjustedEnd, existingRegion.start);
-      } 
-      // Если новый регион начинается позже
-      else if (adjustedStart >= existingRegion.start && adjustedStart < existingRegion.end) {
+      } else if (adjustedStart < existingRegion.end) {
         // Сдвигаем начало к концу существующего
         adjustedStart = existingRegion.end;
       }
     }
   }
 
-  // Проверяем минимальный размер
-  if (adjustedEnd - adjustedStart < MIN_REGION_SIZE) {
-    return false; // Регион слишком мал, нужно удалить
+  // Находим ближайшие регионы по соседству после коррекции
+  const previousRegion = [...sortedRegions].reverse().find((r) => r.end <= adjustedStart) || null;
+  const nextRegion = sortedRegions.find((r) => r.start >= adjustedEnd) || null;
+  const minAllowedStart = previousRegion ? previousRegion.end : 0;
+  const maxAllowedEnd = nextRegion ? nextRegion.start : audioDuration;
+
+  adjustedStart = Math.max(adjustedStart, minAllowedStart);
+  adjustedEnd = Math.min(adjustedEnd, maxAllowedEnd);
+
+  let adjustedDuration = adjustedEnd - adjustedStart;
+
+  if (adjustedDuration < MIN_REGION_SIZE) {
+    let remaining = MIN_REGION_SIZE - adjustedDuration;
+    const availableBefore = adjustedStart - minAllowedStart;
+    const availableAfter = maxAllowedEnd - adjustedEnd;
+
+    // Пытаемся расширить регион вперёд
+    const extendAfter = Math.min(availableAfter, remaining);
+    if (extendAfter > 0) {
+      adjustedEnd += extendAfter;
+      remaining -= extendAfter;
+    }
+
+    // Если места впереди не хватило - расширяем назад
+    if (remaining > 0) {
+      const extendBefore = Math.min(availableBefore, remaining);
+      if (extendBefore > 0) {
+        adjustedStart -= extendBefore;
+        remaining -= extendBefore;
+      }
+    }
+
+    adjustedDuration = adjustedEnd - adjustedStart;
+
+    if (adjustedDuration < MIN_REGION_SIZE - 1e-6) {
+      return false; // Регион слишком мал, нужно удалить
+    }
   }
 
   // Обновляем границы если они изменились

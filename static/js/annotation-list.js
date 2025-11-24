@@ -249,8 +249,8 @@ function selectAnnotationRegion(annotation) {
         start: annotation.start_time,
         end: annotation.end_time,
         color: getAnnotationColor(annotation),
-        drag: true,
-        resize: true,
+        drag: false,
+        resize: false,
     });
 
     annotationRegions[annotation.id] = region;
@@ -381,8 +381,8 @@ function syncWithWavesurferRegions() {
             start: annotation.start_time,
             end: annotation.end_time,
             color: getAnnotationColor(annotation),
-            drag: true,
-            resize: true,
+            drag: false,
+            resize: false,
         });
 
         annotationRegions[annotation.id] = region;
