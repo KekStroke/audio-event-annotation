@@ -288,15 +288,36 @@ function setupAudioEventHandlers() {
     cacheWaveSurferPlugins();
     updateTimeDisplay();
     hideLoadingIndicator();
+    setupRegionOverlapPrevention();
   });
   
   // Событие decode (альтернативное для Web Audio API backend)
   wavesurfer.on("decode", () => {
     cacheWaveSurferPlugins();
+    setupRegionOverlapPrevention();
   });
 
+  // Обработчики для кнопок Zoom не нужны здесь
+  // Они устанавливаются в DOMContentLoaded для ленивой инициализации
+}
+
+/**
+ * Настройка обработчиков для предотвращения наложения регионов
+ */
+function setupRegionOverlapPrevention() {
+  const regionsPlugin = getWaveSurferRegionsPlugin();
+  if (!regionsPlugin) {
+    return;
+  }
+
+  // Проверяем, не подписывались ли мы уже на эти события
+  if (regionsPlugin._overlapPreventionAttached) {
+    return;
+  }
+  regionsPlugin._overlapPreventionAttached = true;
+
   // Событие region-created (регион создан)
-  wavesurfer.on("region-created", (region) => {
+  regionsPlugin.on('region-created', (region) => {
     // Предотвращаем рекурсию
     if (isAdjustingRegion) {
       return;
@@ -320,7 +341,7 @@ function setupAudioEventHandlers() {
   });
 
   // Событие region-updated (регион изменяется во время drag/resize)
-  wavesurfer.on("region-updated", (region) => {
+  regionsPlugin.on('region-updated', (region) => {
     // Предотвращаем рекурсию
     if (isAdjustingRegion) {
       return;
@@ -342,9 +363,6 @@ function setupAudioEventHandlers() {
       isAdjustingRegion = false;
     }
   });
-
-  // Обработчики для кнопок Zoom не нужны здесь
-  // Они устанавливаются в DOMContentLoaded для ленивой инициализации
 }
 
 /**
@@ -558,6 +576,9 @@ function loadAudioFile(audioFileId) {
         
         // Кэшируем плагины после загрузки
         cacheWaveSurferPlugins();
+        
+        // Настраиваем предотвращение наложения регионов
+        setupRegionOverlapPrevention();
         
         // Активируем drag selection
         const regionsPlugin = getWaveSurferRegionsPlugin();
