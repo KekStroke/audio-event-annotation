@@ -23,6 +23,30 @@ function getAnnotationRegionsPlugin() {
     return window.waveSurferRegionsPlugin || null;
 }
 
+/**
+ * Блокирует редактирование региона аннотации (drag/resize)
+ */
+function lockAnnotationRegion(region) {
+    if (!region) return;
+
+    const lockOptions = { drag: false, resize: false };
+
+    if (typeof region.setOptions === 'function') {
+        region.setOptions(lockOptions);
+    } else {
+        region.drag = false;
+        region.resize = false;
+        if (typeof region.update === 'function') {
+            region.update(lockOptions);
+        }
+    }
+
+    if (region.element) {
+        region.element.classList.add('annotation-region-locked');
+        region.element.setAttribute('data-annotation-locked', 'true');
+    }
+}
+
 // Подписка на выбор аудио файла
 document.addEventListener('audioFileSelected', (event) => {
     const audioFileId = event?.detail?.id;
@@ -253,6 +277,8 @@ function selectAnnotationRegion(annotation) {
         resize: false,
     });
 
+    lockAnnotationRegion(region);
+
     annotationRegions[annotation.id] = region;
 
     // Прокручиваем к региону
@@ -384,6 +410,8 @@ function syncWithWavesurferRegions() {
             drag: false,
             resize: false,
         });
+
+        lockAnnotationRegion(region);
 
         annotationRegions[annotation.id] = region;
     });

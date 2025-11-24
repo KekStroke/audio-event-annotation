@@ -313,3 +313,42 @@ def ensure_annotation_region_not_editable():
         assert config['drag'] == 'false', f"Ожидалось drag: false, получено {config['drag']}"
         assert config['resize'] == 'false', f"Ожидалось resize: false, получено {config['resize']}"
 
+    content = test_data['annotation_list_content']
+    assert 'function lockAnnotationRegion' in content, 'Функция lockAnnotationRegion не найдена'
+    assert 'lockAnnotationRegion(region)' in content, 'lockAnnotationRegion не вызывается после создания региона'
+    assert re.search(r'const\s+lockOptions\s*=\s*\{\s*drag\s*:\s*false', content), 'lockOptions не задаёт drag: false'
+    assert 'region.setOptions(lockOptions)' in content, 'lockOptions не применяются через setOptions'
+
+
+@given('selection-tool.js содержит обработчик region-removed')
+def read_selection_tool_file():
+    """Читаем selection-tool.js"""
+    selection_tool_path = Path(__file__).parent.parent / 'static' / 'js' / 'selection-tool.js'
+    content = selection_tool_path.read_text(encoding='utf-8')
+    test_data['selection_tool_content'] = content
+
+
+@when('регион текущего выделения удаляется')
+def annotate_region_removed():
+    """Сохраняем контекст удаления региона"""
+    content = test_data['selection_tool_content']
+    pattern = r'regionsPlugin\.on\([\'"]region-removed[\'"]\s*,\s*\(region'
+    assert re.search(pattern, content), 'Обработчик region-removed не найден или не принимает параметр region'
+    test_data['region_removed_handler_found'] = True
+
+
+@then('Selection Tool должен очистить текущее выделение и скрыть информацию')
+def ensure_selection_cleared_on_remove():
+    """Проверяем что при удалении региона состояние очищается"""
+    assert test_data.get('region_removed_handler_found'), 'Обработчик region-removed не был подтверждён'
+    content = test_data['selection_tool_content']
+
+    # Проверяем что clearSelectionState определяется и вызывается
+    assert 'function clearSelectionState' in content, 'Функция clearSelectionState не определена'
+    assert re.search(r'region-removed[\'"].*?clearSelectionState', content, re.DOTALL), \
+        'clearSelectionState не вызывается в обработчике region-removed'
+    assert re.search(r'clearSelectionState\(\)\s*{[^}]*clearRegionTimeDisplay', content, re.DOTALL), \
+        'clearSelectionState не очищает отображение времени'
+    assert re.search(r'clearSelectionState\(\)\s*{[^}]*clearRegionSpectrogram', content, re.DOTALL), \
+        'clearSelectionState не очищает спектрограмму'
+

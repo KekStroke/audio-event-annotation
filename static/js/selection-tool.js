@@ -107,13 +107,18 @@ function setupRegionHandlers() {
     });
 
     // Обработчик удаления региона - следим за всеми регионами
-    regionsPlugin.on('region-removed', () => {
-        // Проверяем, остались ли регионы
+    regionsPlugin.on('region-removed', (region) => {
         const regions = regionsPlugin.getRegions();
-        if (regions.length === 0) {
-            selectionToolCurrentRegion = null;
-            clearRegionTimeDisplay();
-            clearRegionSpectrogram();
+        const isCurrentRemoved = selectionToolCurrentRegion && region && region.id === selectionToolCurrentRegion.id;
+        const noRegionsLeft = !regions || regions.length === 0;
+        let selectionStillExists = false;
+
+        if (selectionToolCurrentRegion && Array.isArray(regions)) {
+            selectionStillExists = regions.some(existing => existing.id === selectionToolCurrentRegion.id);
+        }
+
+        if (isCurrentRemoved || noRegionsLeft || !selectionStillExists) {
+            clearSelectionState();
         }
     });
 }
@@ -210,16 +215,18 @@ function clearSelection() {
         return;
     }
 
-    // Удаляем только текущий выделенный регион
     if (selectionToolCurrentRegion && typeof selectionToolCurrentRegion.remove === 'function') {
         selectionToolCurrentRegion.remove();
-        selectionToolCurrentRegion = null;
     }
-    
+
+    clearSelectionState();
+}
+
+function clearSelectionState() {
+    selectionToolCurrentRegion = null;
     clearRegionTimeDisplay();
     clearRegionSpectrogram();
 }
-
 /**
  * Обновление отображения времени региона
  */
@@ -391,7 +398,3 @@ document.addEventListener('DOMContentLoaded', () => {
         // Если не готов, ждём события wavesurferRegionsReady (уже подписаны выше)
     }, { once: true });
 });
-
-
-
-
