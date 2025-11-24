@@ -231,7 +231,7 @@ GET /api/audio/{id}/waveform?width=1200&height=300&color=1f77b4
 
 **Response (200 OK):**
 - Content-Type: `image/png`
-- Body: PNG изображение waveform
+- Body: PNG изображение waveform (генерируется на лету без кэширования)
 
 **Error Responses:**
 - **400 Bad Request**: Неверный формат ID или параметров
@@ -267,7 +267,7 @@ GET /api/audio/{id}/spectrogram?start_time=0&end_time=5&width=1024&height=512&co
 
 **Response (200 OK):**
 - Content-Type: `image/png`
-- Body: PNG изображение спектрограммы
+- Body: PNG изображение спектрограммы (генерируется на лету без кэширования)
 
 **Error Responses:**
 - **400 Bad Request**: Неверный формат ID, параметров или временного интервала
