@@ -269,13 +269,6 @@ function clearRegionTimeDisplay() {
  * Загрузка спектрограммы для региона с использованием Region Spectrogram Player
  */
 function loadRegionSpectrogram(region) {
-    console.log('loadRegionSpectrogram called with region:', region);
-    if (region && region.data) {
-        console.log('Region data:', region.data);
-    } else {
-        console.log('Region has no data');
-    }
-
     ensureAudioFileId();
     if (!selectionToolCurrentAudioFileId) {
         console.warn('Audio file ID не установлен');

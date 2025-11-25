@@ -53,7 +53,6 @@ class RegionSpectrogramPlayer {
      * @param {Object} region - Объект региона (опционально)
      */
     async init(audioFileId, start, end, sampleRate = 44100, region = null) {
-        console.log('RegionSpectrogramPlayer.init called', { audioFileId, start, end, region });
         try {
             // Останавливаем воспроизведение перед инициализацией
             this.stop();
@@ -128,7 +127,6 @@ class RegionSpectrogramPlayer {
      * @param {Object} region - Объект региона
      */
     updateAnnotationInfo(region) {
-        console.log('updateAnnotationInfo called with region:', region);
         if (!this.annotationInfo) {
             console.warn('Annotation info container not found');
             return;
@@ -140,7 +138,6 @@ class RegionSpectrogramPlayer {
         const annotation = (region && region.data && region.data.annotation) || (region && region.annotation);
 
         if (annotation) {
-            console.log('Rendering annotation info:', annotation);
             const label = annotation.event_label || 'Unknown Event';
             const confidence = (annotation.confidence !== null && annotation.confidence !== undefined) 
                 ? (annotation.confidence * 100).toFixed(0) + '%' 

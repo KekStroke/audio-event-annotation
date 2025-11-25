@@ -46,7 +46,6 @@ class AppSettings {
     saveSettings(newSettings) {
         this.settings = { ...this.settings, ...newSettings };
         localStorage.setItem('audioEventAnnotationsSettings', JSON.stringify(this.settings));
-        console.log('Settings saved:', this.settings);
         
         // Dispatch event for other components
         document.dispatchEvent(new CustomEvent('settingsChanged', { detail: this.settings }));
