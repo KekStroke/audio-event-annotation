@@ -212,6 +212,9 @@ function initWaveSurfer(audioUrl) {
     plugins: buildWaveSurferPlugins(),
   });
 
+  // Expose globally for other modules
+  window.wavesurfer = wavesurfer;
+
   notifyWavesurferReady();
 
   // Загружаем аудио файл
@@ -261,7 +264,7 @@ function setupAudioEventHandlers() {
     hideLoadingIndicator();
     setupRegionOverlapPrevention();
   });
-  
+
   // Событие decode (альтернативное для Web Audio API backend)
   wavesurfer.on("decode", () => {
     notifyRegionsPluginReady();
@@ -293,14 +296,14 @@ function setupRegionOverlapPrevention() {
     if (isAdjustingRegion) {
       return;
     }
-    
+
     // Устанавливаем флаг
     isAdjustingRegion = true;
-    
+
     try {
       // Проверяем и корректируем границы региона
       const isValid = adjustRegionBounds(region);
-      
+
       // Если регион слишком мал после коррекции - удаляем его
       if (!isValid && region.remove) {
         region.remove();
@@ -317,14 +320,14 @@ function setupRegionOverlapPrevention() {
     if (isAdjustingRegion) {
       return;
     }
-    
+
     // Устанавливаем флаг
     isAdjustingRegion = true;
-    
+
     try {
       // Динамически корректируем границы во время изменения
       const isValid = adjustRegionBounds(region);
-      
+
       // Если регион слишком мал после коррекции - удаляем его
       if (!isValid && region.remove) {
         region.remove();
@@ -356,7 +359,7 @@ function checkRegionOverlap(start1, end1, start2, end2) {
 function adjustRegionBounds(region) {
   const MIN_REGION_SIZE = 1.0; // Минимальный размер региона в секундах
   const regionsPlugin = getWaveSurferRegionsPlugin();
-  
+
   if (!regionsPlugin || !region) {
     return true;
   }
@@ -436,12 +439,12 @@ function adjustRegionBounds(region) {
       // Fallback: напрямую изменяем свойства
       region.start = adjustedStart;
       region.end = adjustedEnd;
-      
+
       // Попытка вызвать update если метод существует
       if (typeof region.update === 'function') {
         region.update({ start: adjustedStart, end: adjustedEnd });
       }
-      
+
       // Попытка вызвать render для перерисовки
       if (typeof region.render === 'function') {
         region.render();
@@ -458,11 +461,11 @@ function adjustRegionBounds(region) {
 function updatePlayPauseButtons(isPlaying) {
   const playPauseIcon = document.getElementById('play-pause-icon');
   const playPauseText = document.getElementById('play-pause-text');
-  
+
   if (playPauseIcon) {
     playPauseIcon.textContent = isPlaying ? '⏸' : '▶';
   }
-  
+
   if (playPauseText) {
     playPauseText.textContent = isPlaying ? 'Pause' : 'Play';
   }
@@ -508,11 +511,11 @@ function showLoadingIndicator() {
   const waveformEl = document.getElementById('waveform');
   const timelineEl = document.getElementById('waveform-timeline');
   const minimapEl = document.getElementById('waveform-minimap');
-  
+
   if (loadingEl) {
     loadingEl.style.display = 'block';
   }
-  
+
   // Hide waveform containers during loading to prevent overlap
   if (waveformEl) {
     waveformEl.style.opacity = '0';
@@ -536,11 +539,11 @@ function hideLoadingIndicator() {
   const waveformEl = document.getElementById('waveform');
   const timelineEl = document.getElementById('waveform-timeline');
   const minimapEl = document.getElementById('waveform-minimap');
-  
+
   if (loadingEl) {
     loadingEl.style.display = 'none';
   }
-  
+
   // Show waveform containers when loading is complete
   if (waveformEl) {
     waveformEl.style.opacity = '1';
@@ -571,8 +574,11 @@ function loadAudioFile(audioFileId) {
   currentlyLoadingAudioId = audioFileId;
   showLoadingIndicator();
 
+  // Очищаем все регионы перед загрузкой нового файла
+  clearRegions();
+
   const audioUrl = `/api/audio/${audioFileId}/stream`;
-  
+
   const loadPromise = wavesurfer.load(audioUrl);
   if (loadPromise && typeof loadPromise.then === "function") {
     loadPromise
@@ -580,13 +586,13 @@ function loadAudioFile(audioFileId) {
         lastLoadedAudioId = audioFileId;
         currentlyLoadingAudioId = null;
         hideLoadingIndicator();
-        
+
         // Уведомляем слушателей что плагин готов
         notifyRegionsPluginReady();
-        
+
         // Настраиваем предотвращение наложения регионов
         setupRegionOverlapPrevention();
-        
+
         // Активируем drag selection
         const regionsPlugin = getWaveSurferRegionsPlugin();
         if (regionsPlugin && typeof regionsPlugin.enableDragSelection === 'function') {
@@ -665,10 +671,10 @@ function zoomToDuration(durationSeconds) {
   if (!waveformContainer) return;
 
   const containerWidth = waveformContainer.offsetWidth;
-  
+
   // Вычисляем zoom: пиксели/сек = ширина_контейнера / длительность
   currentZoom = containerWidth / duration;
-  
+
   wavesurfer.zoom(currentZoom);
   updateZoomDisplay();
   clearZoomError();
@@ -729,16 +735,16 @@ function showZoomError(message) {
     errorElement = document.createElement('div');
     errorElement.className = 'error-message zoom-error-message';
     errorElement.style.cssText = 'position: absolute; top: 50px; left: 50%; transform: translateX(-50%); z-index: 1000; padding: 0.75rem 1rem; background-color: #ff4444; color: white; border-radius: 4px;';
-    
+
     const workspaceHeader = document.querySelector('.workspace-header');
     if (workspaceHeader) {
       workspaceHeader.appendChild(errorElement);
     }
   }
-  
+
   errorElement.textContent = message;
   errorElement.style.display = 'block';
-  
+
   // Автоматически скрыть через 3 секунды
   setTimeout(() => {
     if (errorElement) {
@@ -830,13 +836,13 @@ document.addEventListener("DOMContentLoaded", () => {
     playPauseBtn.addEventListener('click', () => {
       // Инициализируем WaveSurfer при первом взаимодействии
       ensureWaveSurferInitialized();
-      
+
       // Загружаем ожидающий файл, если есть
       if (window.pendingAudioFileId && !lastLoadedAudioId) {
         loadAudioFile(window.pendingAudioFileId);
         window.pendingAudioFileId = null;
       }
-      
+
       // Переключаем play/pause
       if (wavesurfer) {
         if (wavesurfer.isPlaying()) {

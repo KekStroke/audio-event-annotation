@@ -30,6 +30,8 @@ document.addEventListener('audioFileSelected', (event) => {
     const audioFileId = event?.detail?.id;
     if (audioFileId) {
         setCurrentAudioFileId(audioFileId);
+        // Сбрасываем состояние выделения при смене файла
+        clearSelectionState();
     }
 });
 
@@ -104,6 +106,15 @@ function setupRegionHandlers() {
     regionsPlugin.on('region-clicked', (region) => {
         selectionToolCurrentRegion = region;
         updateRegionTimeDisplay(region);
+        loadRegionSpectrogram(region);
+
+        // Если это регион аннотации, отправляем событие для выделения в списке
+        const annotation = (region.data && region.data.annotation) || region.annotation;
+        if (annotation) {
+            document.dispatchEvent(new CustomEvent('annotationSelectedFromRegion', { 
+                detail: { annotationId: annotation.id } 
+            }));
+        }
     });
 
     // Обработчик удаления региона - следим за всеми регионами
@@ -258,37 +269,17 @@ function clearRegionTimeDisplay() {
  * Загрузка спектрограммы для региона с использованием Region Spectrogram Player
  */
 function loadRegionSpectrogram(region) {
+    console.log('loadRegionSpectrogram called with region:', region);
+    if (region && region.data) {
+        console.log('Region data:', region.data);
+    } else {
+        console.log('Region has no data');
+    }
+
     ensureAudioFileId();
     if (!selectionToolCurrentAudioFileId) {
         console.warn('Audio file ID не установлен');
         return;
-    }
-
-    // Проверяем что основной wavesurfer готов
-    if (!wavesurfer || !wavesurfer.getDecodedData || !wavesurfer.getDecodedData()) {
-        console.warn('Main wavesurfer не готов, ждём загрузки аудио');
-        // Подождем события ready и попробуем снова
-        const onReady = () => {
-            loadRegionSpectrogram(region);
-            wavesurfer.un('ready', onReady);
-        };
-        if (wavesurfer) {
-            wavesurfer.once('ready', onReady);
-        }
-        return;
-    }
-
-    // Получаем sample rate из wavesurfer
-    let sampleRate = 44100; // default
-    if (wavesurfer && wavesurfer.getDecodedData) {
-        try {
-            const decodedData = wavesurfer.getDecodedData();
-            if (decodedData && decodedData.sampleRate) {
-                sampleRate = decodedData.sampleRate;
-            }
-        } catch (e) {
-            console.warn('Не удалось получить sample rate:', e);
-        }
     }
 
     // Debounce для избежания лишних загрузок
@@ -296,7 +287,33 @@ function loadRegionSpectrogram(region) {
         clearTimeout(spectrogramDebounceTimer);
     }
 
+    // Stop playback immediately when region is updated
+    if (window.regionSpectrogramPlayer && window.regionSpectrogramPlayer.stop) {
+        window.regionSpectrogramPlayer.stop();
+    }
+
     spectrogramDebounceTimer = setTimeout(() => {
+        // Проверяем что основной wavesurfer готов и имеет декодированные данные
+        if (!wavesurfer || !wavesurfer.getDecodedData || !wavesurfer.getDecodedData()) {
+            console.warn('Main wavesurfer не готов - пропускаем загрузку region player');
+            // Просто пропускаем - region player будет работать только для регионов
+            // созданных вручную после полной загрузки аудио
+            return;
+        }
+
+        // Получаем sample rate из wavesurfer
+        let sampleRate = 44100; // default
+        if (wavesurfer && wavesurfer.getDecodedData) {
+            try {
+                const decodedData = wavesurfer.getDecodedData();
+                if (decodedData && decodedData.sampleRate) {
+                    sampleRate = decodedData.sampleRate;
+                }
+            } catch (e) {
+                console.warn('Не удалось получить sample rate:', e);
+            }
+        }
+
         const startTime = region.start;
         const endTime = region.end;
 
@@ -306,7 +323,8 @@ function loadRegionSpectrogram(region) {
                 selectionToolCurrentAudioFileId,
                 startTime,
                 endTime,
-                sampleRate
+                sampleRate,
+                region // Передаём объект региона как аннотацию
             ).catch(error => {
                 console.error('Ошибка инициализации region spectrogram player:', error);
             });
@@ -314,28 +332,6 @@ function loadRegionSpectrogram(region) {
             console.warn('Region Spectrogram Player не доступен');
         }
     }, 300);  // Debounce 300ms
-}
-
-/**
- * Отображение спектрограммы региона
- */
-function displayRegionSpectrogram(imageUrl) {
-    const spectrogramContainer = document.getElementById('region-spectrogram');
-    if (!spectrogramContainer) return;
-
-    // Очищаем предыдущее изображение
-    spectrogramContainer.innerHTML = '';
-
-    // Создаём элемент img
-    const img = document.createElement('img');
-    img.src = imageUrl;
-    img.alt = 'Region spectrogram';
-    img.style.width = '100%';
-    img.style.height = 'auto';
-    img.style.borderRadius = '4px';
-
-    spectrogramContainer.appendChild(img);
-    spectrogramContainer.style.display = 'block';
 }
 
 /**

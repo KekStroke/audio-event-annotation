@@ -4,7 +4,7 @@
  * Функционал:
  * - Загрузка списка аннотаций с сервера
  * - Отображение аннотаций в sidebar
- * - Клик по аннотации выделяет регион
+ * - Клик по аннотации выделает регион
  * - Кнопки Edit и Delete для каждой аннотации
  * - Цветовая кодировка по типу события
  * - Счетчик аннотаций
@@ -46,8 +46,8 @@ function lockAnnotationRegion(region) {
         region.element.setAttribute('data-annotation-locked', 'true');
         
         // Принудительно применяем стили через JavaScript
-        region.element.style.borderLeft = '2px solid rgba(0, 0, 0, 0.8)';
-        region.element.style.borderRight = '2px solid rgba(0, 0, 0, 0.8)';
+        region.element.style.borderLeft = '1px solid rgba(0, 0, 0, 0.8)';
+        region.element.style.borderRight = '1px solid rgba(0, 0, 0, 0.8)';
         
     }
 }
@@ -80,6 +80,14 @@ function setupEventListeners() {
     document.addEventListener('annotationCreated', loadAnnotations);
     document.addEventListener('annotationUpdated', loadAnnotations);
     document.addEventListener('annotationDeleted', loadAnnotations);
+
+    // Слушаем событие выбора аннотации через waveform (из selection-tool.js)
+    document.addEventListener('annotationSelectedFromRegion', (e) => {
+        if (e.detail && e.detail.annotationId) {
+            highlightAnnotationItem(e.detail.annotationId);
+            scrollToAnnotationItem(e.detail.annotationId);
+        }
+    });
 }
 
 /**
@@ -280,7 +288,11 @@ function selectAnnotationRegion(annotation) {
         color: getAnnotationColor(annotation),
         drag: false,
         resize: false,
+        data: { annotation: annotation } // Attach annotation data
     });
+    
+    // Explicitly attach annotation to region object as fallback
+    region.annotation = annotation;
 
     lockAnnotationRegion(region);
 
@@ -414,7 +426,11 @@ function syncWithWavesurferRegions() {
             color: getAnnotationColor(annotation),
             drag: false,
             resize: false,
+            data: { annotation: annotation } // Attach annotation data
         });
+        
+        // Explicitly attach annotation to region object as fallback
+        region.annotation = annotation;
 
         lockAnnotationRegion(region);
 
@@ -462,6 +478,16 @@ function exportAnnotations() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+}
+
+/**
+ * Прокрутка к элементу аннотации в списке
+ */
+function scrollToAnnotationItem(annotationId) {
+    const item = document.querySelector(`[data-annotation-id="${annotationId}"]`);
+    if (item) {
+        item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
 }
 
 /**

@@ -23,10 +23,11 @@ class RegionSpectrogramPlayer {
         // DOM elements
         this.container = document.getElementById('region-player-container');
         this.waveformContainer = document.getElementById('region-waveform');
-        this.spectrogramContainer = document.getElementById('region-spectrogram');
+        // this.spectrogramContainer = document.getElementById('region-spectrogram'); // Removed as per user request
         this.playPauseBtn = document.getElementById('region-play-pause');
         this.playIcon = document.getElementById('region-play-icon');
         this.timeDisplay = document.getElementById('region-time-display');
+        this.annotationInfo = document.getElementById('region-annotation-info');
 
         this.initializeEventListeners();
     }
@@ -49,12 +50,20 @@ class RegionSpectrogramPlayer {
      * @param {number} start - Начало региона в секундах
      * @param {number} end - Конец региона в секундах
      * @param {number} sampleRate - Sample rate аудио файла
+     * @param {Object} region - Объект региона (опционально)
      */
-    async init(audioFileId, start, end, sampleRate = 44100) {
+    async init(audioFileId, start, end, sampleRate = 44100, region = null) {
+        console.log('RegionSpectrogramPlayer.init called', { audioFileId, start, end, region });
         try {
+            // Останавливаем воспроизведение перед инициализацией
+            this.stop();
+
             // Сохраняем ID и регион
             this.currentAudioFileId = audioFileId;
             this.currentRegion = { start, end };
+
+            // Отображаем информацию об аннотации
+            this.updateAnnotationInfo(region);
 
             // Показываем container
             if (this.container) {
@@ -80,9 +89,10 @@ class RegionSpectrogramPlayer {
             });
 
             // Инициализируем spectrogram plugin с настройками для биоакустики
+            // Используем основной контейнер, так как отдельный div был удален
             this.spectrogramPlugin = this.wavesurfer.registerPlugin(
                 WaveSurfer.Spectrogram.create({
-                    container: this.spectrogramContainer,
+                    container: this.container, // Use the main container
                     labels: true,
                     height: 256,
                     colorMap: 'roseus',
@@ -108,6 +118,65 @@ class RegionSpectrogramPlayer {
     }
 
     /**
+     * Обновление информации об аннотации
+     * @param {Object} region - Объект региона
+     */
+    updateAnnotationInfo(region) {
+        console.log('updateAnnotationInfo called with region:', region);
+        if (!this.annotationInfo) {
+            console.warn('Annotation info container not found');
+            return;
+        }
+        
+        this.annotationInfo.innerHTML = '';
+        
+        // Check both data.annotation (standard) and direct property (fallback)
+        const annotation = (region && region.data && region.data.annotation) || (region && region.annotation);
+
+        if (annotation) {
+            console.log('Rendering annotation info:', annotation);
+            const label = annotation.event_label || 'Unknown Event';
+            const confidence = (annotation.confidence !== null && annotation.confidence !== undefined) 
+                ? (annotation.confidence * 100).toFixed(0) + '%' 
+                : 'N/A';
+            const notes = annotation.notes || '';
+            
+            // Format times
+            const formatTime = (t) => {
+                const m = Math.floor(t / 60);
+                const s = Math.floor(t % 60);
+                const ms = Math.floor((t % 1) * 100);
+                return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+            };
+            const timeRange = `${formatTime(annotation.start_time)} - ${formatTime(annotation.end_time)}`;
+
+            this.annotationInfo.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <strong style="font-size: 1.1em; color: var(--text-primary);">${label}</strong>
+                    <span style="font-family: monospace; color: var(--text-secondary); font-size: 0.9em;">${timeRange}</span>
+                </div>
+                <div style="display: flex; gap: 10px; font-size: 0.9em; color: var(--text-secondary);">
+                    <span>Confidence: <span style="color: var(--text-primary); font-weight: bold;">${confidence}</span></span>
+                </div>
+                ${notes ? `<div style="margin-top: 4px; font-style: italic; color: var(--text-secondary); font-size: 0.9em;">${notes}</div>` : ''}
+            `;
+            this.annotationInfo.style.display = 'block';
+        } else {
+            // No annotation data found
+            if (region && region.id && region.id.startsWith('annotation-')) {
+                 // This IS an annotation but data is missing - show error
+                 console.error('Annotation region missing data:', region);
+                 this.annotationInfo.innerHTML = `<div style="color: #ff6b6b; font-style: italic;">Error: Annotation data missing</div>`;
+                 this.annotationInfo.style.display = 'block';
+            } else {
+                // Regular selection or manual region - hide info (cleaner UI)
+                this.annotationInfo.style.display = 'none';
+            }
+        }
+    }
+
+
+    /**
      * Загрузка аудио для региона - извлечение из основного wavesurfer AudioBuffer
      * 
      * @param {string} audioFileId - UUID аудио файла
@@ -115,58 +184,53 @@ class RegionSpectrogramPlayer {
      * @param {number} end - Конец региона в секундах
      */
     async loadRegionAudio(audioFileId, start, end) {
-        try {
-            // Получаем decoded buffer из основного wavesurfer
-            if (!window.wavesurfer) {
-                throw new Error('Main wavesurfer не инициализирован');
-            }
-
-            const mainBuffer = window.wavesurfer.getDecodedData();
-            if (!mainBuffer) {
-                throw new Error('Аудио не загружено в main wavesurfer');
-            }
-
-            const sampleRate = mainBuffer.sampleRate;
-            const numberOfChannels = mainBuffer.numberOfChannels;
-
-            // Вычисляем sample индексы для региона
-            const startSample = Math.floor(start * sampleRate);
-            const endSample = Math.floor(end * sampleRate);
-            const regionLength = endSample - startSample;
-
-            // Создаём новый AudioBuffer только для региона
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const regionBuffer = audioContext.createBuffer(
-                numberOfChannels,
-                regionLength,
-                sampleRate
-            );
-
-            // Копируем данные региона из основного buffer
-            for (let channel = 0; channel < numberOfChannels; channel++) {
-                const mainChannelData = mainBuffer.getChannelData(channel);
-                const regionChannelData = regionBuffer.getChannelData(channel);
-
-                for (let i = 0; i < regionLength; i++) {
-                    const sourceIndex = startSample + i;
-                    if (sourceIndex < mainChannelData.length) {
-                        regionChannelData[i] = mainChannelData[sourceIndex];
-                    }
-                }
-            }
-
-            // Конвертируем AudioBuffer в Blob (WAV)
-            const wavBlob = this.audioBufferToWav(regionBuffer);
-
-            // Загружаем region buffer в wavesurfer
-            await this.wavesurfer.loadBlob(wavBlob);
-
-            this.updateTimeDisplay(0, end - start);
-
-        } catch (error) {
-            console.error('Error loading region audio:', error);
-            throw error;
+        const mainWavesurfer = window.wavesurfer;
+        if (!mainWavesurfer) {
+            throw new Error('Main wavesurfer instance not found');
         }
+
+        const decodedData = mainWavesurfer.getDecodedData();
+        if (!decodedData) {
+            throw new Error('Audio data not decoded yet');
+        }
+
+        const sampleRate = decodedData.sampleRate;
+        const startSample = Math.floor(start * sampleRate);
+        const endSample = Math.floor(end * sampleRate);
+        const length = endSample - startSample;
+
+        if (length <= 0) {
+            throw new Error('Invalid region length');
+        }
+
+        // Create a new AudioBuffer for the region
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const regionBuffer = audioContext.createBuffer(
+            decodedData.numberOfChannels,
+            length,
+            sampleRate
+        );
+
+        // Copy channel data
+        for (let i = 0; i < decodedData.numberOfChannels; i++) {
+            const channelData = decodedData.getChannelData(i);
+            const regionChannelData = regionBuffer.getChannelData(i);
+            
+            // Copy the segment
+            const actualEndSample = Math.min(endSample, channelData.length);
+            const actualLength = actualEndSample - startSample;
+            
+            if (actualLength > 0) {
+                const slice = channelData.subarray(startSample, actualEndSample);
+                regionChannelData.set(slice);
+            }
+        }
+
+        // Convert to WAV and load
+        const blob = this.audioBufferToWav(regionBuffer);
+        const url = URL.createObjectURL(blob);
+        
+        await this.wavesurfer.load(url);
     }
 
     /**
@@ -319,6 +383,11 @@ class RegionSpectrogramPlayer {
         this.stop();
 
         // Перезагружаем с новыми границами
+        // Важно: передаем текущий регион (если он есть в памяти или можно получить)
+        // Но так как updateRegion вызывается обычно извне, где есть доступ к региону,
+        // лучше бы передавать регион целиком.
+        // Пока оставим null для региона, так как updateRegion используется редко напрямую,
+        // обычно вызывается init заново.
         await this.init(this.currentAudioFileId, start, end, sampleRate);
     }
 
