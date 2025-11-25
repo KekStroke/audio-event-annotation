@@ -46,8 +46,8 @@ function lockAnnotationRegion(region) {
         region.element.setAttribute('data-annotation-locked', 'true');
         
         // Принудительно применяем стили через JavaScript
-        region.element.style.borderLeft = '1px solid rgba(0, 0, 0, 0.8)';
-        region.element.style.borderRight = '1px solid rgba(0, 0, 0, 0.8)';
+        region.element.style.borderLeft = '2px solid rgba(0, 0, 0, 0.8)';
+        region.element.style.borderRight = '2px solid rgba(0, 0, 0, 0.8)';
         
     }
 }

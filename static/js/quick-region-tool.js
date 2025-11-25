@@ -160,7 +160,8 @@ function selectRegion(region) {
                 if (r.element) {
                     r.element.classList.remove('region-selected');
                     // Убираем inline стили выделения
-                    r.element.style.border = '';
+                    r.element.style.outline = '';
+                    r.element.style.outlineOffset = '';
                     r.element.style.boxShadow = '';
                     r.element.style.filter = '';
                 }
@@ -172,9 +173,10 @@ function selectRegion(region) {
     if (region.element) {
         region.element.classList.add('region-selected');
         // Применяем inline стили для надежности (WaveSurfer использует inline стили)
-        region.element.style.border = '3px solid #ffffff';
-        region.element.style.boxShadow = '0 0 15px rgba(255, 255, 255, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.3)';
-        region.element.style.filter = 'brightness(1.3)';
+        region.element.style.outline = '2px solid #ffeb3b';
+        region.element.style.outlineOffset = '-2px';
+        region.element.style.boxShadow = '0 0 8px rgba(255, 235, 59, 0.6)';
+        region.element.style.filter = 'brightness(1.15)';
     }
 
     quickRegionCurrentRegion = region;
