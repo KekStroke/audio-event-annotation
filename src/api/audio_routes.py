@@ -373,3 +373,145 @@ def get_spectrogram(audio_file_id: str):
 
     except Exception as e:
         return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+
+
+@audio_bp.route("/<audio_file_id>", methods=["DELETE"])
+def delete_audio_file(audio_file_id: str):
+    """
+    Удалить аудио-файл из системы.
+
+    DELETE /api/audio/{id}
+
+    Args:
+        audio_file_id: UUID аудио-файла
+
+    Returns:
+        JSON с подтверждением удаления (200)
+        или ошибка (404, 500)
+    """
+    try:
+        import uuid
+
+        # Валидация UUID
+        try:
+            audio_file_uuid = uuid.UUID(audio_file_id)
+        except ValueError:
+            return jsonify({"error": "Invalid audio file ID format"}), 400
+
+        # Удаление из БД
+        db = get_db()
+        session = db.get_session()
+
+        try:
+            audio_file = AudioFile.get_by_id(session, audio_file_uuid)
+
+            if not audio_file:
+                return jsonify({"error": "Audio file not found"}), 404
+
+            # Удаляем запись из БД
+            # Примечание: сам файл с диска мы не удаляем, так как это может быть
+            # внешний файл, на который мы просто ссылаемся.
+            # Если нужно удалять и файл, это должно быть явно указано в требованиях.
+            # Пока удаляем только метаданные из системы.
+
+            session.delete(audio_file)
+            session.commit()
+
+            return jsonify(
+                {"message": "Audio file deleted successfully", "id": audio_file_id}
+            ), 200
+
+        except Exception as e:
+            session.rollback()
+            return jsonify({"error": f"Database error: {str(e)}"}), 500
+        finally:
+            session.close()
+
+    except Exception as e:
+        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
+
+
+@audio_bp.route("/import", methods=["POST"])
+def import_audio_folder():
+    """
+    Импортировать все аудио-файлы из директории.
+
+    POST /api/audio/import
+    Body: {"path": "/path/to/folder"}
+
+    Returns:
+        JSON с результатами импорта (200)
+        или ошибка (400, 404)
+    """
+    try:
+        data = request.get_json() or {}
+        folder_path = data.get("path")
+
+        if not folder_path:
+            return jsonify({"error": "path is required"}), 400
+
+        if not os.path.exists(folder_path):
+            return jsonify({"error": "Directory not found"}), 404
+
+        if not os.path.isdir(folder_path):
+            return jsonify({"error": "Path is not a directory"}), 400
+
+        # Поддерживаемые расширения
+        supported_extensions = {".wav", ".mp3", ".flac", ".ogg", ".aiff"}
+
+        imported_count = 0
+        errors = []
+
+        db = get_db()
+        session = db.get_session()
+
+        try:
+            for filename in os.listdir(folder_path):
+                file_ext = os.path.splitext(filename)[1].lower()
+                if file_ext not in supported_extensions:
+                    continue
+
+                file_path = os.path.join(folder_path, filename)
+
+                try:
+                    # Проверяем, не добавлен ли уже файл (по пути)
+                    existing = session.query(AudioFile).filter_by(file_path=file_path).first()
+                    if existing:
+                        continue
+
+                    # Извлекаем метаданные
+                    metadata = extract_metadata(file_path)
+
+                    audio_file = AudioFile(
+                        file_path=file_path,
+                        filename=filename,
+                        duration=metadata["duration"],
+                        sample_rate=metadata["sample_rate"],
+                        channels=metadata["channels"],
+                        file_size=metadata["file_size"],
+                        status=AudioFileStatus.LOADED,
+                    )
+                    session.add(audio_file)
+                    imported_count += 1
+
+                except Exception as e:
+                    errors.append({"file": filename, "error": str(e)})
+
+            session.commit()
+
+            return jsonify(
+                {
+                    "imported_count": imported_count,
+                    "errors": errors,
+                    "message": f"Successfully imported {imported_count} files",
+                }
+            ), 200
+
+        except Exception as e:
+            session.rollback()
+            return jsonify({"error": f"Database error: {str(e)}"}), 500
+        finally:
+            session.close()
+
+    except Exception as e:
+        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500

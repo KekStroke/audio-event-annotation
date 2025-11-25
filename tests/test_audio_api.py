@@ -189,10 +189,12 @@ def send_post_request(context, endpoint, body, client):
     if 'test_file_path' in context:
         if 'file_path' in data:
             data['file_path'] = context['test_file_path']
-        else:
-            # Если file_path нет в данных, добавляем его
-            data['file_path'] = context['test_file_path']
     
+    if 'import_dir' in context and 'path' in data:
+        # Если в тесте используется алиас пути (например /test/audio_folder), заменяем его на реальный
+        if data['path'] == context.get('import_path_alias'):
+            data['path'] = context['import_dir']
+            
     response = client.post(endpoint, json=data, content_type='application/json')
     context['response'] = response
     context['response_data'] = response.get_json() or {}
@@ -208,6 +210,20 @@ def send_get_request(context, endpoint, client):
         endpoint = endpoint.replace('{id}', context['nonexistent_id'])
     
     response = client.get(endpoint)
+    context['response'] = response
+    context['response_data'] = response.get_json()
+
+
+@when(parsers.parse('я отправляю DELETE запрос на "{endpoint}"'))
+def send_delete_request(context, endpoint, client):
+    """Отправляем DELETE запрос."""
+    # Заменяем переменные в endpoint
+    if 'audio_file_id' in context:
+        endpoint = endpoint.replace('{id}', context['audio_file_id'])
+    elif 'nonexistent_id' in context:
+        endpoint = endpoint.replace('{id}', context['nonexistent_id'])
+    
+    response = client.delete(endpoint)
     context['response'] = response
     context['response_data'] = response.get_json()
 
@@ -241,6 +257,13 @@ def check_response_field_value(context, field, value):
         f"Поле '{field}' имеет значение '{context['response_data'][field]}', ожидалось '{value}'"
 
 
+@then(parsers.parse('ответ должен содержать JSON с полем "{field}" равным {value:d}'))
+def check_response_int_field(context, field, value):
+    """Проверяем целочисленное поле."""
+    assert context['response_data'][field] == value, \
+        f"Поле '{field}' равно {context['response_data'][field]}, ожидалось {value}"
+
+
 @then('AudioFile должен быть сохранён в БД')
 def check_audio_file_saved(context):
     """Проверяем что AudioFile сохранён в БД."""
@@ -250,6 +273,24 @@ def check_audio_file_saved(context):
     audio_file_id = context['response_data']['id']
     audio_file = session.query(AudioFile).filter_by(id=audio_file_id).first()
     assert audio_file is not None, "AudioFile не найден в БД"
+
+
+@then('AudioFile не должен существовать в БД')
+def check_audio_file_deleted(context):
+    """Проверяем что AudioFile удалён из БД."""
+    from src.models.audio_file import AudioFile
+    session = context['session']
+    
+    # Используем ID из контекста, так как в ответе его может не быть или он может быть другим
+    audio_file_id = context.get('audio_file_id')
+    if not audio_file_id:
+        # Если нет в контексте, пробуем взять из ответа (хотя для DELETE это может быть неактуально)
+        audio_file_id = context.get('response_data', {}).get('id')
+    
+    assert audio_file_id is not None, "ID аудио файла не найден в контексте"
+    
+    audio_file = session.query(AudioFile).filter_by(id=audio_file_id).first()
+    assert audio_file is None, "AudioFile всё ещё существует в БД"
 
 
 @then('ответ должен содержать JSON массив')
@@ -286,4 +327,51 @@ def check_field_contains_text(context, field, text):
     error_message = context['response_data'][field]
     assert text in error_message, \
         f"Поле '{field}' содержит '{error_message}', ожидалось '{text}'"
+
+
+@given(parsers.parse('существует директория "{path}" с {count:d} аудио-файлами'))
+def create_directory_with_files(context, path, count):
+    """Создаём директорию с аудио-файлами."""
+    tmp_dir = Path(tempfile.gettempdir()) / "audio_import_test"
+    if tmp_dir.exists():
+        import shutil
+        shutil.rmtree(tmp_dir)
+    tmp_dir.mkdir(exist_ok=True, parents=True)
+    
+    # Создаём файлы
+    import numpy as np
+    import soundfile as sf
+    
+    sample_rate = 44100
+    duration = 0.1
+    t = np.linspace(0, duration, int(sample_rate * duration))
+    signal = np.sin(2 * np.pi * 440 * t)
+    stereo_signal = np.column_stack([signal, signal])
+    
+    for i in range(count):
+        file_path = tmp_dir / f"audio_{i}.wav"
+        sf.write(str(file_path), stereo_signal, sample_rate)
+    
+    context['import_dir'] = str(tmp_dir)
+    context['import_path_alias'] = path
+
+
+@given(parsers.parse('директория "{path}" не существует'))
+def directory_not_exists(context, path):
+    """Помечаем директорию как несуществующую."""
+    context['nonexistent_dir'] = path
+
+
+@then(parsers.parse('в БД существует {count:d} AudioFile'))
+def check_audio_files_count(context, count):
+    """Проверяем количество AudioFile в БД."""
+    from src.models.audio_file import AudioFile
+    
+    if 'session' not in context:
+        context['session'] = context['db'].get_session()
+    
+    session = context['session']
+    actual_count = session.query(AudioFile).count()
+    assert actual_count == count, \
+        f"В БД найдено {actual_count} AudioFile, ожидалось {count}"
 

@@ -94,7 +94,7 @@ class RegionSpectrogramPlayer {
                 WaveSurfer.Spectrogram.create({
                     container: this.container, // Use the main container
                     labels: true,
-                    height: 256,
+                    height: 512,
                     colorMap: 'roseus',
                     scale: 'linear',  // Linear scale для биоакустики - показывает ВСЕ частоты
                     frequencyMin: 0,

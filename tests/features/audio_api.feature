@@ -85,3 +85,40 @@ Feature: API для загрузки и чтения аудио-файлов
     And ответ должен содержать JSON с полем "error"
     And поле "error" должно содержать "file_path is required"
 
+  Scenario: Удаление аудио-файла
+    Given в БД существует AudioFile с id
+    When я отправляю DELETE запрос на "/api/audio/{id}"
+    Then ответ должен иметь статус 200
+    And ответ должен содержать JSON с полем "message" равным "Audio file deleted successfully"
+    And AudioFile не должен существовать в БД
+
+  Scenario: Ошибка при удалении несуществующего файла
+    Given в БД не существует AudioFile с id "00000000-0000-0000-0000-000000000000"
+    When я отправляю DELETE запрос на "/api/audio/00000000-0000-0000-0000-000000000000"
+    Then ответ должен иметь статус 404
+    And ответ должен содержать JSON с полем "error"
+    And поле "error" должно содержать "Audio file not found"
+
+  Scenario: Импорт аудио-файлов из директории
+    Given существует директория "/test/audio_folder" с 2 аудио-файлами
+    When я отправляю POST запрос на "/api/audio/import" с телом:
+      """
+      {
+        "path": "/test/audio_folder"
+      }
+      """
+    Then ответ должен иметь статус 200
+    And ответ должен содержать JSON с полем "imported_count" равным 2
+    And в БД существует 2 AudioFile
+
+  Scenario: Ошибка при импорте из несуществующей директории
+    Given директория "/nonexistent/folder" не существует
+    When я отправляю POST запрос на "/api/audio/import" с телом:
+      """
+      {
+        "path": "/nonexistent/folder"
+      }
+      """
+    Then ответ должен иметь статус 404
+    And ответ должен содержать JSON с полем "error"
+

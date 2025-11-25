@@ -12,6 +12,15 @@ let addFileSuccessMessage = null;
 let addFileErrorMessage = null;
 let addFileSubmitButton = null;
 
+// Import Folder Modal Elements
+let importFolderModalOverlay = null;
+let importFolderModal = null;
+let importFolderForm = null;
+let importFolderPathInput = null;
+let importFolderSuccessMessage = null;
+let importFolderErrorMessage = null;
+let importFolderSubmitButton = null;
+
 document.addEventListener('DOMContentLoaded', () => {
     initAudioFileManager();
 });
@@ -30,7 +39,171 @@ function initAudioFileManager() {
     }
 
     initAddFileModal();
+    initImportFolderModal();
     loadAudioFiles();
+}
+
+/**
+ * Инициализация модального окна импорта папки
+ */
+function initImportFolderModal() {
+    importFolderModalOverlay = document.getElementById('import-folder-modal-overlay');
+    importFolderModal = document.getElementById('import-folder-modal');
+    importFolderForm = document.getElementById('import-folder-form');
+    importFolderPathInput = document.getElementById('import-folder-path');
+    importFolderSuccessMessage = document.getElementById('import-folder-success');
+    importFolderErrorMessage = document.getElementById('import-folder-error');
+    importFolderSubmitButton = document.getElementById('import-folder-submit');
+
+    const importFolderButton = document.querySelector('[data-action="import-folder"]');
+    if (importFolderButton) {
+        importFolderButton.addEventListener('click', () => {
+            resetImportFolderForm();
+            openImportFolderModal();
+        });
+    }
+
+    if (importFolderForm) {
+        importFolderForm.addEventListener('submit', handleImportFolderSubmit);
+    }
+
+    document.querySelectorAll('[data-close-modal="import-folder"]').forEach((button) => {
+        button.addEventListener('click', closeImportFolderModal);
+    });
+
+    if (importFolderModalOverlay) {
+        importFolderModalOverlay.addEventListener('click', (event) => {
+            if (event.target === importFolderModalOverlay) {
+                closeImportFolderModal();
+            }
+        });
+    }
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && importFolderModalOverlay?.classList.contains('active')) {
+            closeImportFolderModal();
+        }
+    });
+}
+
+/**
+ * Обработчик отправки формы импорта папки
+ */
+async function handleImportFolderSubmit(event) {
+    event.preventDefault();
+    if (!importFolderPathInput) {
+        return;
+    }
+
+    const folderPath = importFolderPathInput.value.trim();
+    if (!folderPath) {
+        showImportFolderError('Please enter a folder path');
+        return;
+    }
+
+    if (importFolderSubmitButton) {
+        importFolderSubmitButton.disabled = true;
+        importFolderSubmitButton.textContent = 'Importing...';
+    }
+
+    try {
+        const response = await fetch('/api/audio/import', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ path: folderPath }),
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to import folder');
+        }
+
+        showImportFolderSuccess(`Successfully imported ${data.imported_count} files.`);
+        await loadAudioFiles();
+
+        setTimeout(() => {
+            closeImportFolderModal();
+            resetImportFolderForm();
+        }, 1500);
+
+    } catch (error) {
+        console.error('Error importing folder:', error);
+        showImportFolderError(error.message || 'Error importing folder');
+    } finally {
+        if (importFolderSubmitButton) {
+            importFolderSubmitButton.disabled = false;
+            importFolderSubmitButton.textContent = 'Import Folder';
+        }
+    }
+}
+
+/**
+ * Показ сообщения об успехе импорта
+ */
+function showImportFolderSuccess(message) {
+    if (!importFolderSuccessMessage) return;
+    importFolderSuccessMessage.textContent = message;
+    if (message) {
+        importFolderSuccessMessage.classList.add('active');
+    } else {
+        importFolderSuccessMessage.classList.remove('active');
+    }
+    if (importFolderErrorMessage) {
+        importFolderErrorMessage.classList.remove('active');
+    }
+}
+
+/**
+ * Показ сообщения об ошибке импорта
+ */
+function showImportFolderError(message) {
+    if (!importFolderErrorMessage) return;
+    importFolderErrorMessage.textContent = message;
+    if (message) {
+        importFolderErrorMessage.classList.add('active');
+    } else {
+        importFolderErrorMessage.classList.remove('active');
+    }
+    if (importFolderSuccessMessage) {
+        importFolderSuccessMessage.classList.remove('active');
+    }
+}
+
+/**
+ * Сброс формы импорта
+ */
+function resetImportFolderForm() {
+    if (importFolderForm) {
+        importFolderForm.reset();
+    }
+    showImportFolderSuccess('');
+    showImportFolderError('');
+}
+
+/**
+ * Открытие модального окна импорта
+ */
+function openImportFolderModal() {
+    if (!importFolderModalOverlay || !importFolderModal) {
+        return;
+    }
+    importFolderModalOverlay.classList.add('active');
+    importFolderModal.classList.add('active');
+    importFolderPathInput?.focus();
+}
+
+/**
+ * Закрытие модального окна импорта
+ */
+function closeImportFolderModal() {
+    if (!importFolderModalOverlay || !importFolderModal) {
+        return;
+    }
+    importFolderModalOverlay.classList.remove('active');
+    importFolderModal.classList.remove('active');
 }
 
 /**
@@ -181,8 +354,7 @@ function renderFileList() {
     }
 
     audioFiles.forEach((file, index) => {
-        const item = document.createElement('button');
-        item.type = 'button';
+        const item = document.createElement('div');
         item.className = 'file-item';
         item.dataset.audioFileId = file.id;
         item.setAttribute('role', 'listitem');
@@ -196,11 +368,16 @@ function renderFileList() {
         const duration = formatDurationLabel(file.duration);
 
         item.innerHTML = `
-            <span class="file-name">${title}</span>
-            <span class="file-duration">${duration}</span>
+            <div class="file-info" style="flex: 1; display: flex; justify-content: space-between; align-items: center; overflow: hidden; cursor: pointer;">
+                <span class="file-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 8px;">${title}</span>
+                <span class="file-duration" style="flex-shrink: 0;">${duration}</span>
+            </div>
+            <button type="button" class="delete-file-btn" title="Delete file" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; margin-left: 0.5rem; padding: 0.2rem; font-size: 1.1em; opacity: 0.7;">✕</button>
         `;
 
-        item.addEventListener('click', () => {
+        // Click on file info selects the file
+        const fileInfo = item.querySelector('.file-info');
+        fileInfo.addEventListener('click', () => {
             // Initialize WaveSurfer on file click (user gesture!)
             // This must be synchronous within the click handler
             if (typeof ensureWaveSurferInitialized === 'function') {
@@ -209,8 +386,55 @@ function renderFileList() {
             selectAudioFile(file.id);
         });
 
+        // Click on delete button
+        const deleteBtn = item.querySelector('.delete-file-btn');
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent selection
+            deleteAudioFile(file.id, file.filename);
+        });
+        
+        // Hover effect for delete button
+        deleteBtn.addEventListener('mouseenter', () => { deleteBtn.style.opacity = '1'; deleteBtn.style.color = '#ff6b6b'; });
+        deleteBtn.addEventListener('mouseleave', () => { deleteBtn.style.opacity = '0.7'; deleteBtn.style.color = 'var(--text-secondary)'; });
+
         fileListElement.appendChild(item);
     });
+}
+
+/**
+ * Удаление аудио файла
+ */
+async function deleteAudioFile(audioFileId, filename) {
+    if (!confirm(`Are you sure you want to delete "${filename}"? This action cannot be undone.`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/audio/${audioFileId}`, {
+            method: 'DELETE'
+        });
+
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            throw new Error(data.error || 'Failed to delete file');
+        }
+
+        // Если удален текущий файл, сбрасываем выбор
+        if (window.currentAudioFileId === audioFileId) {
+            window.currentAudioFileId = null;
+            // Очищаем плеер если нужно (можно добавить событие)
+            if (window.wavesurfer) {
+                window.wavesurfer.empty();
+            }
+        }
+
+        // Перезагружаем список
+        await loadAudioFiles();
+
+    } catch (error) {
+        console.error('Error deleting file:', error);
+        alert('Error deleting file: ' + error.message);
+    }
 }
 
 /**

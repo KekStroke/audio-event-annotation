@@ -22,7 +22,6 @@
             <div class="toolbar-content">
                 <h1 class="toolbar-title">Audio Event Annotation</h1>
                 <nav class="toolbar-actions">
-                    <button type="button" class="toolbar-btn" tabindex="1" data-action="add-file">Add File</button>
                     <button type="button" class="toolbar-btn" tabindex="2" data-action="settings">Settings</button>
                 </nav>
             </div>
@@ -32,7 +31,13 @@
         <main class="main-content">
             <!-- Sidebar для списка файлов и аннотаций -->
             <aside class="sidebar" role="complementary">
-                <h2 class="sidebar-title">Files</h2>
+                <div class="sidebar-header" style="display: flex; justify-content: space-between; align-items: center; padding-right: 1rem; border-bottom: 1px solid var(--border-color);">
+                    <h2 class="sidebar-title" style="border-bottom: none;">Files</h2>
+                    <div class="sidebar-actions">
+                        <button type="button" class="icon-btn" data-action="import-folder" title="Import Folder" style="background: none; border: none; color: var(--text-primary); cursor: pointer; font-size: 1.2rem; padding: 0 0.5rem;">📂</button>
+                        <button type="button" class="icon-btn" data-action="add-file" title="Add Audio File" style="background: none; border: none; color: var(--text-primary); cursor: pointer; font-size: 1.5rem; padding: 0 0.5rem;">+</button>
+                    </div>
+                </div>
                 <div class="file-list" role="list">
                     <div class="file-item" role="listitem" tabindex="3">
                         <span class="file-name">No files loaded</span>
@@ -191,6 +196,33 @@
                         <button type="button" class="modal-btn modal-btn-secondary"
                             data-close-modal="add-file">Cancel</button>
                         <button type="submit" class="modal-btn modal-btn-primary" id="add-file-submit">Add File</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно импорта папки -->
+    <div class="modal-overlay" id="import-folder-modal-overlay" aria-hidden="true">
+        <div class="modal" id="import-folder-modal" role="dialog" aria-labelledby="import-folder-modal-title" aria-modal="true">
+            <div class="modal-header">
+                <h2 class="modal-title" id="import-folder-modal-title">Import Audio Folder</h2>
+                <button type="button" class="modal-close" aria-label="Close import folder modal"
+                    data-close-modal="import-folder">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="message success-message" id="import-folder-success"></div>
+                <div class="message error-message" id="import-folder-error"></div>
+                <form id="import-folder-form" class="annotation-form">
+                    <div class="form-group">
+                        <label for="import-folder-path" class="form-label">Folder path *</label>
+                        <input type="text" id="import-folder-path" name="folder_path" class="form-input"
+                            placeholder="E:\data\audio_folder" required>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="modal-btn modal-btn-secondary"
+                            data-close-modal="import-folder">Cancel</button>
+                        <button type="submit" class="modal-btn modal-btn-primary" id="import-folder-submit">Import Folder</button>
                     </div>
                 </form>
             </div>
