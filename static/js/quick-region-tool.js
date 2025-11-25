@@ -205,9 +205,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, { once: true });
 
-    // Также слушаем событие готовности regions plugin
+    // Также слушаем событие готовности regions plugin (только один раз)
     document.addEventListener('wavesurferRegionsReady', () => {
-        quickRegionButtonHandlersAttached = false;
         initQuickRegionTool();
-    });
+    }, { once: true });
 });
