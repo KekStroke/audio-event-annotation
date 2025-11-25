@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ru" class="dark-theme">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,7 +12,9 @@
     <script src="https://unpkg.com/wavesurfer.js@7/dist/plugins/timeline.min.js"></script>
     <script src="https://unpkg.com/wavesurfer.js@7/dist/plugins/regions.min.js"></script>
     <script src="https://unpkg.com/wavesurfer.js@7/dist/plugins/minimap.min.js"></script>
+    <script src="https://unpkg.com/wavesurfer.js@7/dist/plugins/spectrogram.min.js"></script>
 </head>
+
 <body class="dark-theme">
     <div class="app-container">
         <!-- Панель инструментов -->
@@ -35,11 +38,12 @@
                         <span class="file-name">No files loaded</span>
                     </div>
                 </div>
-                
+
                 <!-- Список аннотаций -->
                 <div class="annotations-section" style="margin-top: 2rem;">
                     <h2 class="sidebar-title">Annotations</h2>
-                    <div class="annotations-count" id="annotations-count" style="color: var(--text-secondary, #cccccc); font-size: 0.9rem; margin-bottom: 0.5rem;">
+                    <div class="annotations-count" id="annotations-count"
+                        style="color: var(--text-secondary, #cccccc); font-size: 0.9rem; margin-bottom: 0.5rem;">
                         0 annotations
                     </div>
                     <div class="annotations-list" id="annotations-list" role="list">
@@ -54,25 +58,35 @@
                     <h2 class="workspace-title">Visualization Area</h2>
                     <div class="workspace-controls">
                         <div class="zoom-controls-group">
-                            <button type="button" class="control-btn" id="zoom-in" data-action="zoom-in" tabindex="9" title="Zoom In x2">Zoom In x2</button>
-                            <button type="button" class="control-btn" id="zoom-out" data-action="zoom-out" tabindex="10" title="Zoom Out x2">Zoom Out x2</button>
+                            <button type="button" class="control-btn" id="zoom-in" data-action="zoom-in" tabindex="9"
+                                title="Zoom In x2">Zoom In x2</button>
+                            <button type="button" class="control-btn" id="zoom-out" data-action="zoom-out" tabindex="10"
+                                title="Zoom Out x2">Zoom Out x2</button>
                             <div class="zoom-duration-control">
-                                <input type="number" id="zoom-duration-input" class="zoom-duration-input" min="1" max="3600" step="1" placeholder="60" title="Zoom to duration (seconds)">
-                                <button type="button" class="control-btn" id="zoom-to-duration-btn" data-action="zoom-to-duration" tabindex="11" title="Zoom to show specified duration">Zoom</button>
+                                <input type="number" id="zoom-duration-input" class="zoom-duration-input" min="1"
+                                    max="3600" step="1" placeholder="60" title="Zoom to duration (seconds)">
+                                <button type="button" class="control-btn" id="zoom-to-duration-btn"
+                                    data-action="zoom-to-duration" tabindex="11"
+                                    title="Zoom to show specified duration">Zoom</button>
                             </div>
-                            <span id="current-zoom-display" class="current-zoom-display" title="Current visible duration"></span>
+                            <span id="current-zoom-display" class="current-zoom-display"
+                                title="Current visible duration"></span>
                         </div>
-                        
+
                         <!-- Quick Region Controls -->
                         <div class="zoom-controls-group">
                             <label for="quick-region-duration">Quick Region:</label>
-                            <input type="number" id="quick-region-duration" class="zoom-duration-input" value="10" min="0.1" step="0.1" title="Region duration (seconds)">
+                            <input type="number" id="quick-region-duration" class="zoom-duration-input" value="10"
+                                min="0.1" step="0.1" title="Region duration (seconds)">
                             <span>sec</span>
-                            <button type="button" class="control-btn" id="create-quick-region-btn" data-action="create-quick-region" tabindex="16" title="Create region after rightmost region">Create Region</button>
+                            <button type="button" class="control-btn" id="create-quick-region-btn"
+                                data-action="create-quick-region" tabindex="16"
+                                title="Create region after rightmost region">Create Region</button>
                             <div id="quick-region-error" class="quick-region-error" style="display: none;"></div>
                         </div>
-                        
-                        <button type="button" class="control-btn" id="export-annotations" data-action="export" tabindex="15">Export</button>
+
+                        <button type="button" class="control-btn" id="export-annotations" data-action="export"
+                            tabindex="15">Export</button>
                     </div>
                 </div>
                 <div class="workspace-content">
@@ -86,23 +100,46 @@
                         <div id="waveform-timeline" class="waveform-timeline"></div>
                         <div id="waveform-minimap" class="waveform-minimap"></div>
                         <div id="time-display" class="time-display">00:00 / 00:00</div>
-                        
+
                         <!-- Информация о выделенном регионе -->
-                        <div class="region-info" style="margin-top: 1rem; padding: 1rem; background-color: var(--bg-tertiary); border-radius: 4px;">
-                            <div id="region-time" class="region-time" style="display: none; color: var(--text-primary); font-size: 0.9rem;">
+                        <div class="region-info"
+                            style="margin-top: 1rem; padding: 1rem; background-color: var(--bg-tertiary); border-radius: 4px;">
+                            <div id="region-time" class="region-time"
+                                style="display: none; color: var(--text-primary); font-size: 0.9rem;">
                                 No selection
                             </div>
                             <div class="region-actions" style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
-                                <button type="button" class="control-btn" id="play-selection" data-action="play-selection" tabindex="11">Play Selection</button>
-                                <button type="button" class="control-btn" id="create-annotation" data-action="create-annotation" tabindex="14">Create Annotation</button>
-                                <button type="button" class="control-btn" id="clear-selection" data-action="clear-selection" tabindex="12">Clear Selection</button>
-                                <button type="button" class="control-btn" id="zoom-to-region" data-action="zoom-to-region" tabindex="13">Zoom to Region</button>
+                                <button type="button" class="control-btn" id="play-selection"
+                                    data-action="play-selection" tabindex="11">Play Selection</button>
+                                <button type="button" class="control-btn" id="create-annotation"
+                                    data-action="create-annotation" tabindex="14">Create Annotation</button>
+                                <button type="button" class="control-btn" id="clear-selection"
+                                    data-action="clear-selection" tabindex="12">Clear Selection</button>
+                                <button type="button" class="control-btn" id="zoom-to-region"
+                                    data-action="zoom-to-region" tabindex="13">Zoom to Region</button>
                             </div>
                         </div>
-                        
-                        <!-- Спектрограмма региона -->
-                        <div id="region-spectrogram" class="region-spectrogram" style="margin-top: 1rem; display: none;">
-                            <!-- Спектрограмма будет загружена динамически -->
+
+                        <!-- Region Player с спектрограммой -->
+                        <div id="region-player-container" class="region-player-container"
+                            style="margin-top: 1rem; display: none;">
+                            <h3 class="region-player-title">Region Playback</h3>
+
+                            <!-- Region Waveform -->
+                            <div id="region-waveform" class="region-waveform"></div>
+
+                            <!-- Region Spectrogram -->
+                            <div id="region-spectrogram" class="region-spectrogram"></div>
+
+                            <!-- Region Player Controls -->
+                            <div class="region-player-controls"
+                                style="margin-top: 0.5rem; display: flex; gap: 0.5rem; align-items: center;">
+                                <button type="button" class="control-btn" id="region-play-pause"
+                                    data-action="region-play-pause">
+                                    <span id="region-play-icon">▶</span> Play Region
+                                </button>
+                                <span id="region-time-display" class="region-time-display">00:00 / 00:00</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -115,7 +152,8 @@
                     <label for="playback-speed" class="control-label">
                         Playback Speed: <span id="playback-speed-value">1.0</span>x
                     </label>
-                    <input type="range" id="playback-speed" class="control-input" min="0.5" max="2" step="0.1" value="1" tabindex="4">
+                    <input type="range" id="playback-speed" class="control-input" min="0.5" max="2" step="0.1" value="1"
+                        tabindex="4">
                 </div>
                 <div class="control-group">
                     <label for="volume" class="control-label">
@@ -138,7 +176,8 @@
         <div class="modal" id="add-file-modal" role="dialog" aria-labelledby="add-file-modal-title" aria-modal="true">
             <div class="modal-header">
                 <h2 class="modal-title" id="add-file-modal-title">Add Audio File</h2>
-                <button type="button" class="modal-close" aria-label="Close add file modal" data-close-modal="add-file">&times;</button>
+                <button type="button" class="modal-close" aria-label="Close add file modal"
+                    data-close-modal="add-file">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="message success-message" id="add-file-success"></div>
@@ -146,10 +185,12 @@
                 <form id="add-file-form" class="annotation-form">
                     <div class="form-group">
                         <label for="add-file-path" class="form-label">Audio file path *</label>
-                        <input type="text" id="add-file-path" name="file_path" class="form-input" placeholder="E:\data\audio.wav" required>
+                        <input type="text" id="add-file-path" name="file_path" class="form-input"
+                            placeholder="E:\data\audio.wav" required>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="modal-btn modal-btn-secondary" data-close-modal="add-file">Cancel</button>
+                        <button type="button" class="modal-btn modal-btn-secondary"
+                            data-close-modal="add-file">Cancel</button>
                         <button type="submit" class="modal-btn modal-btn-primary" id="add-file-submit">Add File</button>
                     </div>
                 </form>
@@ -184,7 +225,8 @@
                     <!-- Поле confidence (slider) -->
                     <div class="form-group">
                         <label for="confidence" class="form-label">Confidence</label>
-                        <input type="range" id="confidence" name="confidence" class="form-range" min="0" max="1" step="0.01" value="0.5">
+                        <input type="range" id="confidence" name="confidence" class="form-range" min="0" max="1"
+                            step="0.01" value="0.5">
                         <div class="range-value">
                             Value: <span id="confidence-value">0.50</span>
                         </div>
@@ -216,6 +258,8 @@
     <script src="{{ url_for('static', filename='js/annotation-list.js') }}"></script>
     <!-- Quick Region Tool JavaScript -->
     <script src="{{ url_for('static', filename='js/quick-region-tool.js') }}"></script>
+    <!-- Region Spectrogram Player JavaScript -->
+    <script src="{{ url_for('static', filename='js/region-spectrogram-player.js') }}"></script>
 </body>
-</html>
 
+</html>

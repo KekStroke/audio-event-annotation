@@ -178,7 +178,7 @@ function playSelection() {
     }
 
     const regionEnd = selectionToolCurrentRegion.end;
-    
+
     // Обработчик для остановки в конце региона
     const stopAtRegionEnd = () => {
         if (wavesurfer.getCurrentTime() >= regionEnd) {
@@ -255,7 +255,7 @@ function clearRegionTimeDisplay() {
 }
 
 /**
- * Загрузка спектрограммы для региона (с debounce)
+ * Загрузка спектрограммы для региона с использованием Region Spectrogram Player
  */
 function loadRegionSpectrogram(region) {
     ensureAudioFileId();
@@ -264,7 +264,34 @@ function loadRegionSpectrogram(region) {
         return;
     }
 
-    // Debounce для избежания лишних запросов
+    // Проверяем что основной wavesurfer готов
+    if (!wavesurfer || !wavesurfer.getDecodedData || !wavesurfer.getDecodedData()) {
+        console.warn('Main wavesurfer не готов, ждём загрузки аудио');
+        // Подождем события ready и попробуем снова
+        const onReady = () => {
+            loadRegionSpectrogram(region);
+            wavesurfer.un('ready', onReady);
+        };
+        if (wavesurfer) {
+            wavesurfer.once('ready', onReady);
+        }
+        return;
+    }
+
+    // Получаем sample rate из wavesurfer
+    let sampleRate = 44100; // default
+    if (wavesurfer && wavesurfer.getDecodedData) {
+        try {
+            const decodedData = wavesurfer.getDecodedData();
+            if (decodedData && decodedData.sampleRate) {
+                sampleRate = decodedData.sampleRate;
+            }
+        } catch (e) {
+            console.warn('Не удалось получить sample rate:', e);
+        }
+    }
+
+    // Debounce для избежания лишних загрузок
     if (spectrogramDebounceTimer) {
         clearTimeout(spectrogramDebounceTimer);
     }
@@ -273,24 +300,19 @@ function loadRegionSpectrogram(region) {
         const startTime = region.start;
         const endTime = region.end;
 
-        // Формируем URL для получения спектрограммы
-        const spectrogramUrl = `/api/audio/${selectionToolCurrentAudioFileId}/spectrogram?start_time=${startTime}&end_time=${endTime}&width=800&height=400`;
-
-        // Загружаем спектрограмму
-        fetch(spectrogramUrl)
-            .then((response) => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.blob();
-            })
-            .then((blob) => {
-                const imageUrl = URL.createObjectURL(blob);
-                displayRegionSpectrogram(imageUrl);
-            })
-            .catch((error) => {
-                console.error('Ошибка загрузки спектрограммы:', error);
+        // Используем Region Spectrogram Player
+        if (window.regionSpectrogramPlayer && window.regionSpectrogramPlayer.init) {
+            window.regionSpectrogramPlayer.init(
+                selectionToolCurrentAudioFileId,
+                startTime,
+                endTime,
+                sampleRate
+            ).catch(error => {
+                console.error('Ошибка инициализации region spectrogram player:', error);
             });
+        } else {
+            console.warn('Region Spectrogram Player не доступен');
+        }
     }, 300);  // Debounce 300ms
 }
 
@@ -320,10 +342,9 @@ function displayRegionSpectrogram(imageUrl) {
  * Очистка спектрограммы региона
  */
 function clearRegionSpectrogram() {
-    const spectrogramContainer = document.getElementById('region-spectrogram');
-    if (spectrogramContainer) {
-        spectrogramContainer.innerHTML = '';
-        spectrogramContainer.style.display = 'none';
+    // Уничтожаем Region Spectrogram Player
+    if (window.regionSpectrogramPlayer && window.regionSpectrogramPlayer.destroy) {
+        window.regionSpectrogramPlayer.destroy();
     }
 }
 
@@ -397,7 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         // Если не готов, ждём события wavesurferRegionsReady (уже подписаны выше)
     }, { once: true });
-    
+
     // Очищаем временный region после создания аннотации
     document.addEventListener('annotationCreated', () => {
         if (selectionToolCurrentRegion) {
