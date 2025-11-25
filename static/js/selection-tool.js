@@ -397,4 +397,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         // Если не готов, ждём события wavesurferRegionsReady (уже подписаны выше)
     }, { once: true });
+    
+    // Очищаем временный region после создания аннотации
+    document.addEventListener('annotationCreated', () => {
+        if (selectionToolCurrentRegion) {
+            clearSelectionState();
+        }
+    });
 });

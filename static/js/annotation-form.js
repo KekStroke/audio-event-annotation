@@ -276,7 +276,28 @@ function saveAnnotation() {
             document.dispatchEvent(new CustomEvent('annotationUpdated', { detail: data }));
         } else {
             showSuccess('Аннотация успешно сохранена');
-            // Отправляем событие о создании аннотации
+            
+            // ВАЖНО: Удаляем временный region ДО отправки события annotationCreated
+            // чтобы избежать пересечений с новым locked регионом
+            if (annotationFormCurrentRegion && typeof annotationFormCurrentRegion.remove === 'function') {
+                annotationFormCurrentRegion.remove();
+
+                annotationFormCurrentRegion = null;
+            }
+            
+            // Очищаем также selectionToolCurrentRegion
+            if (typeof selectionToolCurrentRegion !== 'undefined' && selectionToolCurrentRegion) {
+                if (typeof selectionToolCurrentRegion.remove === 'function') {
+                    try {
+                        selectionToolCurrentRegion.remove();
+                    } catch (e) {
+                        console.warn('Не удалось удалить selection region:', e);
+                    }
+                }
+                selectionToolCurrentRegion = null;
+            }
+            
+            // Отправляем событие о создании аннотации ПОСЛЕ удаления временного региона
             document.dispatchEvent(new CustomEvent('annotationCreated', { detail: data }));
         }
         
