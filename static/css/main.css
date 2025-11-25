@@ -454,10 +454,10 @@ body {
 #waveform {
     width: 100%;
     min-height: 200px;
-    height: 200px;
+    height: auto;
     background-color: var(--bg-tertiary);
     border-radius: 4px;
-    overflow: hidden;
+    overflow: visible;
     transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 

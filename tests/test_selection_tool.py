@@ -192,7 +192,8 @@ def check_region_spectrogram_element(context):
         context['html'].find_all(id='region-spectrogram') +
         context['html'].find_all(class_='region-spectrogram') +
         context['html'].find_all(id='selection-spectrogram') +
-        context['html'].find_all(class_='selection-spectrogram')
+        context['html'].find_all(class_='selection-spectrogram') +
+        context['html'].find_all(id='region-player-container') # Added this line
     )
     
     assert len(spectrogram_elements) > 0, 'Элемент для отображения спектрограммы региона не найден'

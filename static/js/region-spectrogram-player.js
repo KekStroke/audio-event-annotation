@@ -76,6 +76,12 @@ class RegionSpectrogramPlayer {
                 this.wavesurfer = null;
             }
 
+            // Get settings
+            const height = window.appSettings ? window.appSettings.get('spectrogramHeight') : 512;
+            const showLabels = window.appSettings ? window.appSettings.get('showSpectrogramLabels') : true;
+            // Always use default colormap 'roseus'
+            const colorMap = 'roseus';
+
             // Создаём новый wavesurfer instance
             this.wavesurfer = WaveSurfer.create({
                 container: this.waveformContainer,
@@ -93,9 +99,9 @@ class RegionSpectrogramPlayer {
             this.spectrogramPlugin = this.wavesurfer.registerPlugin(
                 WaveSurfer.Spectrogram.create({
                     container: this.container, // Use the main container
-                    labels: true,
-                    height: 512,
-                    colorMap: 'roseus',
+                    labels: showLabels,
+                    height: height,
+                    colorMap: colorMap,
                     scale: 'linear',  // Linear scale для биоакустики - показывает ВСЕ частоты
                     frequencyMin: 0,
                     frequencyMax: sampleRate / 2,  // До Nyquist frequency для ультразвука

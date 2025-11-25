@@ -239,7 +239,8 @@ def check_labels(context):
     script_path = Path('static/js/region-spectrogram-player.js')
     if script_path.exists():
         content = script_path.read_text(encoding='utf-8')
-        assert 'labels: true' in content
+        # Проверяем что labels передается как параметр (теперь это переменная showLabels)
+        assert 'labels: showLabels' in content
 
 
 @then('высота спектрограммы задана в настройках')

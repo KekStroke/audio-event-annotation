@@ -287,9 +287,11 @@ function selectAnnotationRegion(annotation) {
         end: annotation.end_time,
         color: getAnnotationColor(annotation),
         drag: false,
-        resize: false,
-        data: { annotation: annotation } // Attach annotation data
+        resize: false
     });
+    
+    // Attach annotation data
+    region.data = { annotation: annotation };
     
     // Explicitly attach annotation to region object as fallback
     region.annotation = annotation;
@@ -425,9 +427,11 @@ function syncWithWavesurferRegions() {
             end: annotation.end_time,
             color: getAnnotationColor(annotation),
             drag: false,
-            resize: false,
-            data: { annotation: annotation } // Attach annotation data
+            resize: false
         });
+        
+        // Attach annotation data
+        region.data = { annotation: annotation };
         
         // Explicitly attach annotation to region object as fallback
         region.annotation = annotation;

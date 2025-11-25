@@ -105,6 +105,39 @@ function buildWaveSurferPlugins() {
     console.warn("WaveSurfer minimap plugin недоступен, миникарта отключена.");
   }
 
+  // Spectrogram Plugin (Conditional)
+  const showSpectrogram = window.appSettings ? window.appSettings.get('showMainSpectrogram') : false;
+  const spectrogramHeight = window.appSettings ? window.appSettings.get('mainSpectrogramHeight') : 256;
+  const showLabels = window.appSettings ? window.appSettings.get('showSpectrogramLabels') : true;
+
+  if (showSpectrogram) {
+    const spectrogramFactory = resolveWaveSurferPlugin(
+      () => WaveSurfer.spectrogram,
+      () => WaveSurfer.Spectrogram,
+      () => WaveSurfer.plugins && WaveSurfer.plugins.spectrogram,
+      () => WaveSurfer.plugins && WaveSurfer.plugins.Spectrogram,
+      () => window.WaveSurferSpectrogram
+    );
+    
+    if (spectrogramFactory) {
+      plugins.push(
+        spectrogramFactory.create({
+          container: "#waveform", // Render into the same container
+          labels: showLabels,
+          height: spectrogramHeight,
+          colorMap: 'roseus',
+          splitChannels: false,
+          scale: 'linear',
+          frequencyMin: 0,
+          fftSamples: 1024,
+          labelsBackground: 'rgba(0, 0, 0, 0.7)',
+          labelsColor: '#ffffff',
+          labelsHzColor: '#ffffff'
+        })
+      );
+    }
+  }
+
   return plugins;
 }
 
@@ -935,4 +968,17 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
+
+  // Listen for settings changes to reload if needed
+  document.addEventListener('settingsChanged', (e) => {
+    // If showMainSpectrogram changed, we need to re-init wavesurfer
+    // But only if we have a loaded file, otherwise next load will pick it up
+    if (wavesurfer && lastLoadedAudioId) {
+       const currentId = lastLoadedAudioId;
+       // Re-init to pick up new plugins (this destroys the old instance)
+       initWaveSurfer(null);
+       // Load the file again
+       loadAudioFile(currentId);
+    }
+  });
 });
