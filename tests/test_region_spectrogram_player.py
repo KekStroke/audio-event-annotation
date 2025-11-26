@@ -115,7 +115,8 @@ def check_play_region_logic(context):
     script_path = Path('static/js/region-spectrogram-player.js')
     if script_path.exists():
         content = script_path.read_text(encoding='utf-8')
-        assert 'this.wavesurfer.play()' in content
+        # Теперь мы используем mainPlayer для воспроизведения
+        assert 'this.mainPlayer.play()' in content
 
 
 @then('прогресс отображается на region waveform')
@@ -303,7 +304,8 @@ def check_pause_logic(context):
     script_path = Path('static/js/region-spectrogram-player.js')
     if script_path.exists():
         content = script_path.read_text(encoding='utf-8')
-        assert 'this.wavesurfer.pause()' in content
+        # Теперь мы используем mainPlayer для паузы
+        assert 'this.mainPlayer.pause()' in content
 
 
 @then('позиция курсора сохраняется')

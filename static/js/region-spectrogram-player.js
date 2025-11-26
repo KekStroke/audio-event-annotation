@@ -28,6 +28,13 @@ class RegionSpectrogramPlayer {
         this.playIcon = document.getElementById('region-play-icon');
         this.timeDisplay = document.getElementById('region-time-display');
         this.annotationInfo = document.getElementById('region-annotation-info');
+        
+        // Synchronization state
+        this.mainPlayer = null;
+        this.isSyncingFromMain = false;
+        this.isSyncingFromRegion = false;
+        this.isPlayingRegion = false;
+        this.syncHandlers = {};
 
         this.initializeEventListeners();
     }
@@ -113,6 +120,14 @@ class RegionSpectrogramPlayer {
 
             // Загружаем аудио региона (извлекаем из основного buffer)
             await this.loadRegionAudio(audioFileId, start, end);
+            
+            // Mute region player as we will use main player for playback
+            if (this.wavesurfer) {
+                this.wavesurfer.setVolume(0);
+            }
+
+            // Setup synchronization with main player
+            this.setupSynchronization();
 
             // Подписываемся на события wavesurfer
             this.setupWavesurferEvents();
@@ -286,82 +301,185 @@ class RegionSpectrogramPlayer {
     }
 
     /**
+     * Setup synchronization between main player and region player
+     */
+    setupSynchronization() {
+        this.mainPlayer = window.wavesurfer;
+        if (!this.mainPlayer) return;
+
+        // Clean up old handlers if any
+        if (this.syncHandlers.mainTimeUpdate) {
+            this.mainPlayer.un('timeupdate', this.syncHandlers.mainTimeUpdate);
+            this.mainPlayer.un('pause', this.syncHandlers.mainPause);
+            this.mainPlayer.un('play', this.syncHandlers.mainPlay);
+        }
+
+        // Define handlers
+        this.syncHandlers.mainTimeUpdate = (currentTime) => {
+            if (this.isSyncingFromRegion) return;
+
+            const start = this.currentRegion.start;
+            const end = this.currentRegion.end;
+            const duration = end - start;
+
+            // Check if main player is within region bounds
+            if (currentTime >= start && currentTime <= end) {
+                this.isSyncingFromMain = true;
+                
+                // Calculate relative position (0..1)
+                const relativeProgress = (currentTime - start) / duration;
+                
+                // Update region player cursor without seeking (if possible) or just seek
+                // WaveSurfer v7 seekTo takes 0..1
+                if (this.wavesurfer) {
+                    this.wavesurfer.seekTo(relativeProgress);
+                    this.updateTimeDisplay(relativeProgress * duration, duration);
+                }
+                
+                this.isSyncingFromMain = false;
+            } else {
+                // If we were playing the region specifically and went out of bounds, stop
+                if (this.isPlayingRegion) {
+                    this.stop();
+                }
+            }
+        };
+
+        this.syncHandlers.mainPause = () => {
+            if (this.isPlayingRegion) {
+                this.isPlaying = false;
+                this.updatePlayPauseButton();
+            }
+        };
+
+        this.syncHandlers.mainPlay = () => {
+            // If main player starts playing and is inside our region, we should reflect that state
+            // But we only set isPlaying=true if we initiated it via Play Region button
+            // or if we want the region player to look "active" whenever main player is inside.
+            // For now, let's keep isPlaying tied to the "Play Region" intent.
+        };
+
+        // Attach handlers
+        this.mainPlayer.on('timeupdate', this.syncHandlers.mainTimeUpdate);
+        this.mainPlayer.on('pause', this.syncHandlers.mainPause);
+        this.mainPlayer.on('play', this.syncHandlers.mainPlay);
+    }
+
+    /**
      * Настройка event listeners для wavesurfer
      */
     setupWavesurferEvents() {
         if (!this.wavesurfer) return;
 
-        // Обновление времени при воспроизведении
-        this.wavesurfer.on('audioprocess', () => {
-            if (this.isPlaying) {
-                const currentTime = this.wavesurfer.getCurrentTime();
-                const duration = this.wavesurfer.getDuration();
-                this.updateTimeDisplay(currentTime, duration);
+        // Region -> Main synchronization (User clicks on region player)
+        // We use 'interaction' event in v7 if available, or 'click'/'drag'
+        // But 'seek' is the most reliable for position changes
+        this.wavesurfer.on('click', (relativeProgress) => {
+             // relativeProgress is usually 0..1 in v7 click handler? 
+             // Actually v7 click event might pass relative position?
+             // Let's rely on getCurrentTime() after interaction or seek event
+        });
+        
+        this.wavesurfer.on('seek', (relativeProgress) => {
+            if (this.isSyncingFromMain) return;
+            
+            this.isSyncingFromRegion = true;
+            
+            if (this.mainPlayer && this.currentRegion) {
+                const start = this.currentRegion.start;
+                const duration = this.currentRegion.end - start;
+                
+                // Calculate absolute time
+                const absoluteTime = start + (relativeProgress * duration);
+                
+                // Seek main player
+                // Note: mainPlayer.seekTo takes 0..1 (progress), setTime takes seconds
+                if (typeof this.mainPlayer.setTime === 'function') {
+                    this.mainPlayer.setTime(absoluteTime);
+                } else {
+                    // Fallback for older versions or if setTime missing
+                    const mainDuration = this.mainPlayer.getDuration();
+                    if (mainDuration > 0) {
+                        this.mainPlayer.seekTo(absoluteTime / mainDuration);
+                    }
+                }
             }
+            
+            this.isSyncingFromRegion = false;
         });
 
-        // При окончании воспроизведения
-        this.wavesurfer.on('finish', () => {
-            this.isPlaying = false;
-            this.updatePlayPauseButton();
-        });
-
-        // При паузе
-        this.wavesurfer.on('pause', () => {
-            this.isPlaying = false;
-            this.updatePlayPauseButton();
-        });
-
-        // При воспроизведении
-        this.wavesurfer.on('play', () => {
-            this.isPlaying = true;
-            this.updatePlayPauseButton();
-        });
-
-        // Клик по waveform для перемотки
-        this.wavesurfer.on('click', () => {
-            const currentTime = this.wavesurfer.getCurrentTime();
-            const duration = this.wavesurfer.getDuration();
-            this.updateTimeDisplay(currentTime, duration);
-        });
+        // Обновление времени при воспроизведении (local playback is muted but still runs?)
+        // No, we don't run local playback anymore.
     }
 
     /**
      * Toggle play/pause
      */
     togglePlayPause() {
-        if (!this.wavesurfer) return;
-
-        this.wavesurfer.playPause();
+        if (this.isPlaying) {
+            this.pause();
+        } else {
+            this.play();
+        }
     }
 
     /**
-     * Play region
+     * Play region using Main Player
      */
     play() {
-        if (!this.wavesurfer) return;
+        if (!this.mainPlayer || !this.currentRegion) return;
 
-        this.wavesurfer.play();
+        this.isPlaying = true;
+        this.isPlayingRegion = true;
+        this.updatePlayPauseButton();
+
+        // Seek main player to start of region
+        if (typeof this.mainPlayer.setTime === 'function') {
+            this.mainPlayer.setTime(this.currentRegion.start);
+        } else {
+            const mainDuration = this.mainPlayer.getDuration();
+            this.mainPlayer.seekTo(this.currentRegion.start / mainDuration);
+        }
+        
+        this.mainPlayer.play();
     }
 
     /**
-     * Pause region
+     * Pause region (pauses Main Player)
      */
     pause() {
-        if (!this.wavesurfer) return;
+        if (!this.mainPlayer) return;
 
-        this.wavesurfer.pause();
+        this.isPlaying = false;
+        this.updatePlayPauseButton();
+        this.mainPlayer.pause();
     }
 
     /**
      * Stop region
      */
     stop() {
-        if (!this.wavesurfer) return;
+        if (!this.mainPlayer) return;
 
-        this.wavesurfer.stop();
         this.isPlaying = false;
+        this.isPlayingRegion = false;
         this.updatePlayPauseButton();
+        this.mainPlayer.pause();
+        
+        // Reset to start of region
+        if (this.currentRegion) {
+             if (typeof this.mainPlayer.setTime === 'function') {
+                this.mainPlayer.setTime(this.currentRegion.start);
+            } else {
+                const mainDuration = this.mainPlayer.getDuration();
+                this.mainPlayer.seekTo(this.currentRegion.start / mainDuration);
+            }
+            
+            // Also reset local cursor
+            if (this.wavesurfer) {
+                this.wavesurfer.seekTo(0);
+            }
+        }
     }
 
     /**
@@ -435,8 +553,13 @@ class RegionSpectrogramPlayer {
      */
     destroy() {
         // Останавливаем воспроизведение
-        if (this.wavesurfer) {
-            this.wavesurfer.stop();
+        this.stop();
+
+        // Clean up sync handlers
+        if (this.mainPlayer && this.syncHandlers.mainTimeUpdate) {
+            this.mainPlayer.un('timeupdate', this.syncHandlers.mainTimeUpdate);
+            this.mainPlayer.un('pause', this.syncHandlers.mainPause);
+            this.mainPlayer.un('play', this.syncHandlers.mainPlay);
         }
 
         // Уничтожаем wavesurfer
@@ -457,6 +580,8 @@ class RegionSpectrogramPlayer {
         this.currentAudioFileId = null;
         this.currentRegion = null;
         this.isPlaying = false;
+        this.isPlayingRegion = false;
+        this.mainPlayer = null;
 
         // Очищаем time display
         if (this.timeDisplay) {
